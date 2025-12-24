@@ -5,6 +5,7 @@ import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { MongooseModule } from '@nestjs/mongoose';
 import { join } from 'path';
 import { MailModule } from './mail/mail.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -16,6 +17,9 @@ import { MailModule } from './mail/mail.module';
       playground: true,
     }),
     MailModule,
+    ConfigModule.forRoot({
+      isGlobal: true, // VERY IMPORTANT
+    }),
   ],
 })
 export class AppModule {}

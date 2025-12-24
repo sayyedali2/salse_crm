@@ -28,7 +28,7 @@ export class Lead {
   name: string;
 
   @Field()
-  @Prop({ required: true, unique: true }) // Spam Protection (Unique Email) [cite: 16]
+  @Prop({ required: true }) // Spam Protection (Unique Email) [cite: 16]
   email: string;
 
   @Field()
