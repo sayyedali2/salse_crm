@@ -1,0 +1,40 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type TimelineItem {
+  event: String!
+  timestamp: DateTime!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Lead {
+  _id: ID!
+  name: String!
+  email: String!
+  phone: String!
+  budget: Int!
+  serviceType: String!
+  status: String!
+  timeline: [TimelineItem!]!
+}
+
+type Query {
+  leads: [Lead!]!
+}
+
+type Mutation {
+  createLead(createLeadInput: CreateLeadInput!): Lead!
+}
+
+input CreateLeadInput {
+  name: String!
+  email: String!
+  phone: String!
+  budget: Int!
+  serviceType: String!
+}
