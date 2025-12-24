@@ -91,4 +91,18 @@ export class LeadsService {
   async getAllLeads(): Promise<Lead[]> {
     return this.leadModel.find().exec();
   }
+  async updateStatus(id: string, status: string): Promise<Lead> {
+    const lead = await this.leadModel.findById(id);
+    if (!lead) throw new Error('Lead not found');
+
+    lead.status = status;
+
+    // Add log to timeline
+    lead.timeline.push({
+      event: `Status changed manually to ${status}`,
+      timestamp: new Date(),
+    });
+
+    return lead.save();
+  }
 }

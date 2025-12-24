@@ -18,4 +18,12 @@ export class LeadsResolver {
   async getLeads(): Promise<Lead[]> {
     return this.leadsService.getAllLeads();
   }
+
+  @Mutation(() => Lead)
+  async updateLeadStatus(
+    @Args('id', { type: () => String }) id: string,
+    @Args('status', { type: () => String }) status: string,
+  ) {
+    return this.leadsService.updateStatus(id, status);
+  }
 }

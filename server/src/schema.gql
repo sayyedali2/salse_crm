@@ -29,6 +29,7 @@ type Query {
 
 type Mutation {
   createLead(createLeadInput: CreateLeadInput!): Lead!
+  updateLeadStatus(id: String!, status: String!): Lead!
 }
 
 input CreateLeadInput {
