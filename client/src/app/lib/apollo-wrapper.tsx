@@ -7,10 +7,10 @@ import {
   NextSSRApolloClient,
   NextSSRInMemoryCache,
   SSRMultipartLink,
-} from '@apollo/experimental-nextjs-app-support/ssr';
+} from "@apollo/experimental-nextjs-app-support/ssr";
 
 // Backend URL
-const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || 'http://localhost:3000/graphql';
+const GRAPHQL_ENDPOINT = "https://sales-pilot-api.onrender.com/graphql";
 
 function makeClient() {
   // 1. HTTP Link
