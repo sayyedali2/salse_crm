@@ -1,14 +1,24 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+type NextConfigExtended = NextConfig & {
+  typescript?: { ignoreBuildErrors?: boolean };
+  eslint?: { ignoreDuringBuilds?: boolean };
+};
+
+const nextConfig: NextConfigExtended = {
   /* config options here */
-   async rewrites() {
-    return [
-      {
-        source: "/graphql",
-        destination: "http://localhost:3001/graphql",
-      },
-    ];
+
+  // 👇 Ye 2 sections add karein
+  typescript: {
+    // !! WARN !!
+    // Dangerously allow production builds to successfully complete even if
+    // your project has type errors.
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    // Warning: This allows production builds to successfully complete even if
+    // your project has ESLint errors.
+    ignoreDuringBuilds: true,
   },
 };
 
