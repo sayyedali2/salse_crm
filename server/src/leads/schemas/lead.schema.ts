@@ -46,7 +46,16 @@ export class Lead {
   @Field()
   @Prop({
     default: 'NEW',
-    enum: ['NEW', 'QUALIFIED', 'REJECTED', 'MEETING_BOOKED', 'WON', 'LOST'],
+
+    enum: [
+      'NEW',
+      'QUALIFIED',
+      'REJECTED',
+      'MEETING_BOOKED',
+      'WON',
+      'LOST',
+      'PROPOSAL_SENT',
+    ],
   })
   status: string;
 
