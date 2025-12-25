@@ -68,6 +68,36 @@ export class MailService {
     }
   }
 
+  async sendBookingReminder(to: string, name: string) {
+    const subject = 'Reminder: Let’s schedule your project discussion';
+    const bookingLink = 'http://localhost:3001/booking'; // Dummy link
+
+    const html = `
+      <p>Hi ${name},</p>
+      <p>We noticed that you qualified for our project program but haven't booked your meeting yet.</p>
+      <p>Slots are filling up fast. Please select a time that works for you:</p>
+      <p>
+        <a href="${bookingLink}" style="background-color: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+          Book Now
+        </a>
+      </p>
+      <p>If you have any questions, feel free to reply to this email.</p>
+      <p>Regards,<br/>Sales Team</p>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: '"My CRM Team" <your-email@gmail.com>',
+        to,
+        subject,
+        html,
+      });
+      console.log(`Reminder email sent to ${to}`);
+    } catch (error) {
+      console.error('Error sending reminder:', error);
+    }
+  }
+
   async sendAcknowledgementEmail(to: string, name: string) {
     const subject = 'We have received your project inquiry';
     const html = `
@@ -86,6 +116,35 @@ export class MailService {
       });
     } catch (error) {
       console.error('Error sending ack email:', error);
+    }
+  }
+
+  async sendProposalEmail(to: string, name: string, pdfBuffer: Buffer) {
+    const subject = 'Project Proposal - SalesPilot';
+    const html = `
+      <p>Hi ${name},</p>
+      <p>Please find attached the proposal for your project.</p>
+      <p>Let us know if you have any questions.</p>
+      <p>Regards,<br/>Sales Team</p>
+    `;
+
+    try {
+      await this.transporter.sendMail({
+        from: '"My CRM Team" <your-email@gmail.com>',
+        to,
+        subject,
+        html,
+        attachments: [
+          {
+            filename: 'Proposal.pdf',
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+      console.log(`Proposal PDF sent to ${to}`);
+    } catch (error) {
+      console.error('Error sending proposal:', error);
     }
   }
 }

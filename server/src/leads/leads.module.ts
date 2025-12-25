@@ -11,5 +11,6 @@ import { MailModule } from 'src/mail/mail.module';
     MailModule,
   ],
   providers: [LeadsResolver, LeadsService],
+  exports: [LeadsService],
 })
 export class LeadsModule {}

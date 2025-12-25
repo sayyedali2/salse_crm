@@ -1,28 +1,42 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {  gql } from "@apollo/client";
+import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
-  Box, Typography, Card, CardContent, Chip, Grid, Avatar,
-  IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText,
-  useTheme, Divider, Button, LinearProgress, AppBar, Toolbar, useMediaQuery, CssBaseline
+  Box, Typography, Chip, LinearProgress, CssBaseline, IconButton, 
+  Tooltip, CircularProgress, Snackbar, Alert, Dialog, DialogTitle, 
+  DialogContent, DialogActions, Button, Avatar, Tabs, Tab, 
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Select, MenuItem, FormControl, SelectChangeEvent, Container, Grid
 } from "@mui/material";
 
 // Icons
-import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
-import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
-import SettingsIcon from '@mui/icons-material/Settings';
-import MenuIcon from '@mui/icons-material/Menu'; // Hamburger Icon
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import AddIcon from '@mui/icons-material/Add';
-import PhoneIcon from '@mui/icons-material/Phone';
+import { 
+  AttachMoney, Phone, PictureAsPdf, Email, 
+  Close, History, ViewList, Edit, TrendingUp, Group, Assignment
+} from "@mui/icons-material";
 
-import Link from "next/link";
+// Charts
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area 
+} from 'recharts';
 
-// --- GRAPHQL ---
+// --- TYPES & GRAPHQL ---
+interface Lead {
+  _id: string;
+  name: string;
+  budget: number;
+  status: string;
+  serviceType: string;
+  phone: string;
+  email: string;
+}
+
+interface GetLeadsData {
+  leads: Lead[];
+}
+
 const GET_LEADS = gql`
   query GetLeads {
     leads {
@@ -32,6 +46,7 @@ const GET_LEADS = gql`
       status
       serviceType
       phone
+      email
     }
   }
 `;
@@ -45,286 +60,290 @@ const UPDATE_STATUS_MUTATION = gql`
   }
 `;
 
-// --- CONFIGURATION ---
-const DRAWER_WIDTH = 260;
-const COLUMNS: any = {
-  NEW: { title: "New Leads", color: "#6366f1", bg: "#eef2ff", icon: "✨" },
-  QUALIFIED: { title: "Qualified", color: "#f59e0b", bg: "#fffbeb", icon: "🔥" },
-  WON: { title: "Closed Won", color: "#10b981", bg: "#ecfdf5", icon: "💰" },
-  REJECTED: { title: "Rejected", color: "#ef4444", bg: "#fef2f2", icon: "❌" },
-};
+const SEND_PROPOSAL_MUTATION = gql`
+  mutation SendProposal($id: String!) {
+    sendProposal(id: $id)
+  }
+`;
 
-export default function ResponsiveDashboard() {
-  const theme = useTheme();
-  // Check if screen is mobile
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  // Removed pollInterval to stop auto-reloading/flickering
-  const { data, loading, refetch } = useQuery(GET_LEADS); 
+export default function DashboardPage() {
+  const { data, loading, refetch } = useQuery<GetLeadsData>(GET_LEADS);
   const [updateStatus] = useMutation(UPDATE_STATUS_MUTATION);
-  const [columns, setColumns] = useState<any>({ NEW: [], QUALIFIED: [], REJECTED: [], WON: [] });
+  const [sendProposal] = useMutation(SEND_PROPOSAL_MUTATION);
+
+  const [tabValue, setTabValue] = useState(0);
+  const [activeLeads, setActiveLeads] = useState<Lead[]>([]);
+  const [historyLeads, setHistoryLeads] = useState<Lead[]>([]);
+  const [proposalLoading, setProposalLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ open: boolean, msg: string, type: 'success' | 'error' }>({ open: false, msg: "", type: 'success' });
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   // Stats Logic
-  const totalValue = data?.leads?.reduce((sum: any, lead: any) => sum + lead.budget, 0) || 0;
-  const totalLeads = data?.leads?.length || 0;
+  const totalLeads = data?.leads.length || 0;
+  const totalValue = data?.leads.reduce((acc, curr) => acc + curr.budget, 0) || 0;
+  const activeCount = activeLeads.length;
+
+  // Chart Data (Mock + Real Count Mix)
+  const chartData = [
+    { name: 'Mon', leads: 2 },
+    { name: 'Tue', leads: 4 },
+    { name: 'Wed', leads: 1 },
+    { name: 'Thu', leads: 5 },
+    { name: 'Fri', leads: activeCount }, // Real active count
+    { name: 'Sat', leads: 3 },
+    { name: 'Sun', leads: 2 },
+  ];
 
   useEffect(() => {
     if (data?.leads) {
-      const newCols: any = { NEW: [], QUALIFIED: [], REJECTED: [], WON: [] };
-      data.leads.forEach((lead: any) => {
-        if (newCols[lead.status]) newCols[lead.status].push(lead);
+      const active: Lead[] = [];
+      const history: Lead[] = [];
+      data.leads.forEach((lead: Lead) => {
+        if (['NEW', 'QUALIFIED'].includes(lead.status)) active.push(lead);
+        else history.push(lead);
       });
-      setColumns(newCols);
+      setActiveLeads(active);
+      setHistoryLeads(history);
     }
   }, [data]);
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  const onDragEnd = async (result: any) => {
-    if (!result.destination) return;
-    const { source, destination, draggableId } = result;
-    if (source.droppableId === destination.droppableId) return;
-
-    const sourceCol = [...columns[source.droppableId]];
-    const destCol = [...columns[destination.droppableId]];
-    const [movedItem] = sourceCol.splice(source.index, 1);
-    
-    // UI Update immediately
-    const updatedItem = { ...movedItem, status: destination.droppableId };
-    destCol.splice(destination.index, 0, updatedItem);
-    setColumns({ ...columns, [source.droppableId]: sourceCol, [destination.droppableId]: destCol });
-
-    // Backend Update
+  const handleStatusChange = async (id: string, event: SelectChangeEvent) => {
+    const newStatus = event.target.value as string;
+    // ... (Same logic as before) ...
     try {
-      await updateStatus({ variables: { id: draggableId, status: destination.droppableId } });
-    } catch (err) { console.error(err); }
+        await updateStatus({ variables: { id, status: newStatus } });
+        setToast({ open: true, msg: `Status updated`, type: 'success' });
+        refetch();
+    } catch (err) {
+        setToast({ open: true, msg: "Update failed", type: 'error' });
+    }
   };
 
-  // --- DRAWER CONTENT (Shared between mobile and desktop) ---
-  const drawerContent = (
-    <>
-      <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Box sx={{ width: 32, height: 32, bgcolor: "#6366f1", borderRadius: 2 }} />
-        <Typography variant="h6" fontWeight="bold" letterSpacing={1}>
-          SALES<span style={{color: "#818cf8"}}>PILOT</span>
-        </Typography>
-      </Box>
-      <Divider sx={{ borderColor: "#334155" }} />
-      <List sx={{ mt: 2 }}>
-        {['Dashboard', 'All Leads', 'Analytics', 'Settings'].map((text, index) => (
-          <ListItem button key={text} sx={{ mb: 1, mx: 1, borderRadius: 2, bgcolor: index === 0 ? "#1e293b" : "transparent", '&:hover': { bgcolor: "#334155" } }}>
-            <ListItemIcon sx={{ color: index === 0 ? "#818cf8" : "#94a3b8" }}>
-              {index === 0 ? <SpaceDashboardIcon /> : index === 1 ? <PeopleAltIcon /> : <SettingsIcon />}
-            </ListItemIcon>
-            <ListItemText primary={text} primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
-          </ListItem>
-        ))}
-      </List>
-      <Box sx={{ mt: 'auto', p: 2 }}>
-        <Link href="/" style={{ textDecoration: 'none' }}>
-            <Button 
-                fullWidth 
-                variant="contained" 
-                startIcon={<AddIcon />}
-                sx={{ bgcolor: "#6366f1", '&:hover': { bgcolor: "#4f46e5" }, py: 1.5, borderRadius: 2, textTransform: 'none', fontWeight: 'bold' }}
-            >
-                Create Lead
-            </Button>
-        </Link>
-      </Box>
-    </>
-  );
+  const handleSendProposal = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setProposalLoading(id);
+    try {
+      await sendProposal({ variables: { id } });
+      setToast({ open: true, msg: "Proposal Sent Successfully! 📄", type: 'success' });
+    } catch (err) {
+      setToast({ open: true, msg: "Failed to send proposal.", type: 'error' });
+    } finally {
+      setProposalLoading(null);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch(status) {
+      case 'NEW': return { color: '#6366f1', bg: '#eef2ff', label: 'New Inquiry' };
+      case 'QUALIFIED': return { color: '#d97706', bg: '#fffbeb', label: 'Qualified' };
+      case 'WON': return { color: '#059669', bg: '#ecfdf5', label: 'Won' };
+      case 'REJECTED': return { color: '#dc2626', bg: '#fef2f2', label: 'Rejected' };
+      default: return { color: 'grey', bg: '#f3f4f6', label: status };
+    }
+  }
 
   if (loading) return <LinearProgress />;
 
   return (
-    <Box sx={{ display: 'flex', bgcolor: "#f1f5f9", minHeight: "100vh" }}>
+    <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
       <CssBaseline />
-      
-      {/* 1. Mobile AppBar (Hamburger Menu) */}
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-          ml: { sm: `${DRAWER_WIDTH}px` },
-          display: { sm: 'none' }, // Only show on mobile
-          bgcolor: "#0f172a"
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Dashboard
-          </Typography>
-        </Toolbar>
-      </AppBar>
+      <Snackbar open={toast.open} autoHideDuration={4000} onClose={() => setToast({...toast, open: false})}>
+        <Alert severity={toast.type} sx={{ width: '100%' }}>{toast.msg}</Alert>
+      </Snackbar>
 
-      {/* 2. Responsive Navigation Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { sm: DRAWER_WIDTH }, flexShrink: { sm: 0 } }}
-      >
-        {/* Mobile Drawer (Temporary) */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }} // Better mobile performance
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: "#0f172a", color: "white" },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-
-        {/* Desktop Drawer (Permanent) */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: DRAWER_WIDTH, bgcolor: "#0f172a", color: "white" },
-          }}
-          open
-        >
-          {drawerContent}
-        </Drawer>
-      </Box>
-
-      {/* 3. Main Content Area */}
-      <Box 
-        component="main" 
-        sx={{ 
-          flexGrow: 1, 
-          p: 3, 
-          width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
-          mt: { xs: 8, sm: 0 } // Mobile me header ke liye margin
-        }}
-      >
-        {/* Top Header (Desktop only text) */}
-        <Box display={{ xs: 'none', sm: 'flex' }} justifyContent="space-between" alignItems="center" mb={4}>
-          <Box>
-            <Typography variant="h4" fontWeight="800" sx={{ color: "#1e293b" }}>
-              Pipeline Board
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Manage your sales and track progress.
-            </Typography>
-          </Box>
-          <Avatar sx={{ bgcolor: "#cbd5e1", color: "#1e293b" }}>A</Avatar>
+      {/* ✅ CONTAINER: Ye content ko center me rakhega aur side me chipakne se rokega */}
+      <Container maxWidth="xl" sx={{ pt: 4 }}>
+        
+        {/* Header */}
+        <Box mb={4} display="flex" justifyContent="space-between" alignItems="center">
+           <Box>
+             <Typography variant="h4" fontWeight="800" color="#1e293b">Dashboard</Typography>
+             <Typography variant="body2" color="#64748b">Overview of your sales pipeline</Typography>
+           </Box>
+           <Avatar sx={{ bgcolor: "#4f46e5" }}>A</Avatar>
         </Box>
 
-        {/* Stats Row */}
+        {/* --- ANALYTICS SECTION --- */}
         <Grid container spacing={3} mb={4}>
-            {[
-                { label: "Pipeline Value", val: `₹${totalValue.toLocaleString()}`, color: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" },
-                { label: "Active Leads", val: totalLeads, color: "white", textColor: "black" },
-                { label: "Conversion", val: "18.2%", color: "white", textColor: "black" },
-            ].map((stat, idx) => (
-                <Grid item xs={12} md={4} key={idx}>
-                    <Card sx={{ 
-                        borderRadius: 4, 
-                        background: stat.color, 
-                        color: stat.textColor || 'white',
-                        boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                    }}>
-                        <CardContent sx={{ p: 3 }}>
-                            <Typography variant="caption" sx={{ opacity: 0.8, textTransform: "uppercase", letterSpacing: 1 }}>
-                                {stat.label}
-                            </Typography>
-                            <Typography variant="h4" fontWeight="bold" mt={1}>
-                                {stat.val}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-            ))}
+            
+            {/* Stat Card 1: Total Revenue */}
+            <Grid item xs={12} md={4}>
+                <Paper 
+                    elevation={0}
+                    sx={{ p: 3, borderRadius: 3, height: '100%', background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", color: "white" }}
+                >
+                    <Box display="flex" alignItems="center" gap={1} mb={2} sx={{ opacity: 0.8 }}>
+                        <AttachMoney /> <Typography variant="subtitle2">Total Pipeline Value</Typography>
+                    </Box>
+                    <Typography variant="h3" fontWeight="bold">₹{totalValue.toLocaleString()}</Typography>
+                    <Chip label="+12% growth" size="small" sx={{ mt: 2, bgcolor: "rgba(255,255,255,0.2)", color: "white" }} />
+                </Paper>
+            </Grid>
+
+            {/* Stat Card 2: Active Leads */}
+            <Grid item xs={12} md={3}>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, height: '100%', border: "1px solid #e2e8f0" }}>
+                    <Box display="flex" alignItems="center" gap={1} mb={1} color="#64748b">
+                        <Group /> <Typography variant="subtitle2">Active Leads</Typography>
+                    </Box>
+                    <Typography variant="h3" fontWeight="bold" color="#1e293b">{activeCount}</Typography>
+                    <Typography variant="caption" color="textSecondary">Potential clients currently in pipeline</Typography>
+                </Paper>
+            </Grid>
+
+            {/* Chart: Weekly Trend */}
+            <Grid item xs={12} md={5}>
+                <Paper elevation={0} sx={{ p: 3, borderRadius: 3, height: '100%', border: "1px solid #e2e8f0" }}>
+                    <Typography variant="subtitle2" fontWeight="bold" color="#64748b" mb={2} display="flex" alignItems="center" gap={1}>
+                        <TrendingUp fontSize="small"/> Weekly Volume
+                    </Typography>
+                    <Box height={120} width="100%">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                                <Area type="monotone" dataKey="leads" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorLeads)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </Box>
+                </Paper>
+            </Grid>
         </Grid>
 
-        {/* Kanban Board */}
-        <DragDropContext onDragEnd={onDragEnd}>
-          {/* Mobile: Grid items stack (xs=12). Desktop: 4 columns (md=3) */}
-          <Grid container spacing={3}>
-            {Object.entries(COLUMNS).map(([columnId, config]: any) => (
-              <Grid item xs={12} md={3} key={columnId}>
-                <Box 
-                  sx={{ 
-                    bgcolor: "#e2e8f0", 
-                    p: 2, 
-                    borderRadius: 3, 
-                    // Mobile pe height auto, Desktop pe fixed scrollable
-                    minHeight: { xs: "auto", md: "65vh" } 
-                  }}
-                >
-                  <Box display="flex" justifyContent="space-between" mb={2} px={1}>
-                    <Typography fontWeight="bold" color="#475569" display="flex" alignItems="center" gap={1}>
-                      <span>{config.icon}</span> {config.title}
-                    </Typography>
-                    <Chip label={columns[columnId]?.length} size="small" sx={{ bgcolor: "white", fontWeight: "bold" }} />
-                  </Box>
+        {/* --- TABS & TABLE --- */}
+        <Paper elevation={0} sx={{ bgcolor: "transparent", borderBottom: 1, borderColor: "divider", mb: 2 }}>
+            <Tabs value={tabValue} onChange={(e, v) => setTabValue(v)} textColor="primary" indicatorColor="primary">
+            <Tab icon={<ViewList />} iconPosition="start" label={`Active Pipeline (${activeLeads.length})`} />
+            <Tab icon={<History />} iconPosition="start" label={`History (${historyLeads.length})`} />
+            </Tabs>
+        </Paper>
 
-                  <Droppable droppableId={columnId}>
-                    {(provided) => (
-                      <div ref={provided.innerRef} {...provided.droppableProps} style={{ minHeight: "100px" }}>
-                        {columns[columnId]?.map((lead: any, index: number) => (
-                          <Draggable key={lead._id} draggableId={lead._id} index={index}>
-                            {(provided, snapshot) => (
-                              <Card
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                sx={{ 
-                                  mb: 1.5, 
-                                  borderRadius: 2,
-                                  boxShadow: snapshot.isDragging ? 3 : 0,
-                                  border: "1px solid #f1f5f9",
-                                  bgcolor: "white",
-                                  ...provided.draggableProps.style // Necessary for drag physics
-                                }}
-                              >
-                                <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
-                                  <Box display="flex" gap={1} mb={1.5}>
-                                    {lead.budget > 50000 && (
-                                        <Chip label="High Value" size="small" sx={{ height: 20, fontSize: 10, bgcolor: "#dcfce7", color: "#166534", fontWeight: "bold" }} />
-                                    )}
-                                    <Chip label={lead.serviceType} size="small" sx={{ height: 20, fontSize: 10, bgcolor: "#f1f5f9" }} />
-                                  </Box>
-                                  <Typography fontWeight="700" sx={{ color: "#334155" }}>{lead.name}</Typography>
-                                  <Box display="flex" alignItems="center" gap={1} mt={1} color="#64748b">
-                                     <PhoneIcon sx={{ fontSize: 14 }} />
-                                     <Typography variant="caption">{lead.phone}</Typography>
-                                  </Box>
-                                  <Divider sx={{ my: 1.5, borderStyle: 'dashed' }} />
-                                  <Box display="flex" justifyContent="space-between" alignItems="center">
-                                    <Typography variant="subtitle2" fontWeight="bold" sx={{ color: "#0f172a", display: 'flex', alignItems: 'center' }}>
-                                        <AttachMoneyIcon sx={{ fontSize: 16 }} /> {lead.budget.toLocaleString()}
-                                    </Typography>
-                                  </Box>
-                                </CardContent>
-                              </Card>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
+        <TableContainer component={Paper} elevation={0} sx={{ borderRadius: 3, border: "1px solid #e2e8f0", overflowX: 'auto' }}>
+            <Table sx={{ minWidth: 650 }}>
+            <TableHead sx={{ bgcolor: "#f8fafc" }}>
+                <TableRow>
+                <TableCell sx={{ color: "#64748b", fontWeight: "bold" }}>CLIENT DETAILS</TableCell>
+                <TableCell sx={{ color: "#64748b", fontWeight: "bold" }}>SERVICE</TableCell>
+                <TableCell sx={{ color: "#64748b", fontWeight: "bold" }}>BUDGET</TableCell>
+                <TableCell sx={{ color: "#64748b", fontWeight: "bold" }}>STATUS</TableCell>
+                <TableCell align="right" sx={{ color: "#64748b", fontWeight: "bold" }}>ACTIONS</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
+                {(tabValue === 0 ? activeLeads : historyLeads).length === 0 ? (
+                <TableRow><TableCell colSpan={5} align="center" sx={{ py: 6, color: '#94a3b8' }}>No leads found</TableCell></TableRow>
+                ) : (
+                (tabValue === 0 ? activeLeads : historyLeads).map((lead) => (
+                    <TableRow key={lead._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                    <TableCell>
+                        <Box display="flex" alignItems="center" gap={2}>
+                        <Avatar sx={{ bgcolor: getStatusColor(lead.status).color, width: 36, height: 36, fontSize: 14 }}>{lead.name[0]}</Avatar>
+                        <Box>
+                            <Typography fontWeight="600" color="#1e293b">{lead.name}</Typography>
+                            <Typography variant="caption" color="textSecondary" display="block">{lead.email}</Typography>
+                        </Box>
+                        </Box>
+                    </TableCell>
+
+                    <TableCell>
+                        <Chip label={lead.serviceType} size="small" sx={{ bgcolor: "#f1f5f9", fontWeight: 500 }} />
+                    </TableCell>
+
+                    <TableCell>
+                        <Typography fontWeight="bold" color="#475569">₹{lead.budget.toLocaleString()}</Typography>
+                    </TableCell>
+
+                    <TableCell>
+                        {tabValue === 0 ? (
+                        <FormControl size="small" variant="standard" sx={{ minWidth: 120 }}>
+                            <Select
+                            value={lead.status}
+                            onChange={(e) => handleStatusChange(lead._id, e)}
+                            disableUnderline
+                            sx={{ fontSize: '0.875rem', fontWeight: 'bold', color: getStatusColor(lead.status).color }}
+                            >
+                            <MenuItem value="NEW">New Inquiry</MenuItem>
+                            <MenuItem value="QUALIFIED">Qualified</MenuItem>
+                            <MenuItem value="WON" sx={{ color: '#059669' }}>Mark Won</MenuItem>
+                            <MenuItem value="REJECTED" sx={{ color: '#dc2626' }}>Mark Lost</MenuItem>
+                            </Select>
+                        </FormControl>
+                        ) : (
+                        <Chip label={getStatusColor(lead.status).label} size="small" sx={{ bgcolor: getStatusColor(lead.status).bg, color: getStatusColor(lead.status).color, fontWeight: 'bold' }} />
+                        )}
+                    </TableCell>
+
+                    <TableCell align="right">
+                        <Box display="flex" justifyContent="flex-end" gap={1}>
+                        <Tooltip title="Send Proposal">
+                            <IconButton 
+                                size="small" 
+                                onClick={(e) => handleSendProposal(e, lead._id)}
+                                disabled={proposalLoading === lead._id}
+                                sx={{ color: "#ef4444", bgcolor: "#fef2f2", '&:hover': { bgcolor: "#fee2e2" } }}
+                            >
+                                {proposalLoading === lead._id ? <CircularProgress size={16} /> : <PictureAsPdf fontSize="small" />}
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="View Details">
+                            <IconButton size="small" onClick={() => setSelectedLead(lead)} sx={{ color: "#6366f1", bgcolor: "#eef2ff", '&:hover': { bgcolor: "#e0e7ff" } }}>
+                                <Edit fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                        </Box>
+                    </TableCell>
+                    </TableRow>
+                ))
+                )}
+            </TableBody>
+            </Table>
+        </TableContainer>
+      </Container>
+
+      {/* --- DETAIL MODAL --- */}
+      <Dialog open={!!selectedLead} onClose={() => setSelectedLead(null)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+        {selectedLead && (
+          <>
+            <DialogTitle sx={{ borderBottom: '1px solid #f1f5f9' }}>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h6" fontWeight="bold">Lead Details</Typography>
+                    <IconButton onClick={() => setSelectedLead(null)}><Close /></IconButton>
                 </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </DragDropContext>
-      </Box>
+            </DialogTitle>
+            <DialogContent sx={{ pt: 3 }}>
+                <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                        <Box p={2} bgcolor="#f8fafc" borderRadius={2} display="flex" alignItems="center" gap={2}>
+                            <Avatar sx={{ width: 50, height: 50, bgcolor: "#eef2ff", color: "#6366f1" }}>{selectedLead.name[0]}</Avatar>
+                            <Box>
+                                <Typography variant="h6" fontWeight="bold">{selectedLead.name}</Typography>
+                                <Typography variant="body2" color="textSecondary">{selectedLead.email}</Typography>
+                            </Box>
+                        </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">Phone</Typography>
+                        <Typography fontWeight="500">{selectedLead.phone}</Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                        <Typography variant="caption" color="textSecondary">Budget</Typography>
+                        <Typography fontWeight="500">₹{selectedLead.budget.toLocaleString()}</Typography>
+                    </Grid>
+                </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2, borderTop: '1px solid #f1f5f9' }}>
+              <Button variant="contained" color="error" startIcon={<PictureAsPdf />} onClick={(e) => handleSendProposal(e, selectedLead._id)} disabled={proposalLoading === selectedLead._id}>
+                {proposalLoading === selectedLead._id ? "Sending..." : "Send Proposal PDF"}
+              </Button>
+            </DialogActions>
+          </>
+        )}
+      </Dialog>
     </Box>
   );
 }

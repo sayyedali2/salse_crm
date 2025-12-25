@@ -23,6 +23,25 @@ type Lead {
   timeline: [TimelineItem!]!
 }
 
+type Booking {
+  _id: ID!
+  leadId: String!
+  clientName: String!
+  clientEmail: String!
+  date: DateTime!
+  timeSlot: String!
+  meetingLink: String!
+  status: String!
+}
+
+type LoginResponse {
+  access_token: String!
+}
+
+type UserType {
+  email: String!
+}
+
 type Query {
   leads: [Lead!]!
 }
@@ -30,6 +49,10 @@ type Query {
 type Mutation {
   createLead(createLeadInput: CreateLeadInput!): Lead!
   updateLeadStatus(id: String!, status: String!): Lead!
+  sendProposal(id: String!): Boolean!
+  createBooking(createBookingInput: CreateBookingInput!): Booking!
+  login(email: String!, password: String!): LoginResponse!
+  signup(email: String!, password: String!): UserType!
 }
 
 input CreateLeadInput {
@@ -38,4 +61,10 @@ input CreateLeadInput {
   phone: String!
   budget: Int!
   serviceType: String!
+}
+
+input CreateBookingInput {
+  leadId: String!
+  date: DateTime!
+  timeSlot: String!
 }
