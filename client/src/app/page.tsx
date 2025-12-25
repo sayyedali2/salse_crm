@@ -18,7 +18,7 @@ import {
   CircularProgress,
   Container,
   Grid,
-  Chip
+  Chip,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 
@@ -30,7 +30,7 @@ import {
   Code,
   ArrowForward,
   RocketLaunch,
-  CheckCircle
+  CheckCircle,
 } from "@mui/icons-material";
 import MonetizationOnOutlinedIcon from "@mui/icons-material/MonetizationOnOutlined";
 
@@ -66,20 +66,21 @@ const HeroSection = styled(Box)({
   alignItems: "center",
   position: "relative",
   overflow: "hidden",
-  padding: "40px 0"
+  padding: "40px 0",
 });
 
 const LightCard = styled(motion.div)({
   background: "#ffffff",
   borderRadius: "24px",
   // Soft Corporate Shadow
-  boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)", 
+  boxShadow:
+    "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)",
   padding: "48px",
   width: "100%",
   maxWidth: "550px",
   position: "relative",
   zIndex: 10,
-  border: "1px solid #f1f5f9"
+  border: "1px solid #f1f5f9",
 });
 
 const LightInput = styled(TextField)({
@@ -88,16 +89,16 @@ const LightInput = styled(TextField)({
     borderRadius: "12px",
     backgroundColor: "#f1f5f9", // Light Grey Input Bg
     transition: "all 0.2s ease",
-    "& fieldset": { 
-        borderColor: "#e2e8f0",
-        borderWidth: "1px"
+    "& fieldset": {
+      borderColor: "#e2e8f0",
+      borderWidth: "1px",
     },
     "&:hover fieldset": { borderColor: "#cbd5e1" },
-    "&.Mui-focused fieldset": { 
-        borderColor: "#6366f1", // Indigo focus
-        borderWidth: "2px"
+    "&.Mui-focused fieldset": {
+      borderColor: "#6366f1", // Indigo focus
+      borderWidth: "2px",
     },
-    "&.Mui-focused": { backgroundColor: "#ffffff" }
+    "&.Mui-focused": { backgroundColor: "#ffffff" },
   },
   "& .MuiInputLabel-root": { color: "#64748b" },
   "& .MuiInputLabel-root.Mui-focused": { color: "#6366f1" },
@@ -126,7 +127,10 @@ export default function LightLandingPage() {
     },
   });
 
-  const [createLead, { loading }] = useMutation(CREATE_LEAD_MUTATION);
+  const [createLead, { loading }] = useMutation<
+    { createLead: { status: string } },
+    { createLeadInput: Partial<IFormInput> }
+  >(CREATE_LEAD_MUTATION);
 
   const onSubmit: SubmitHandler<IFormInput> = async (data) => {
     setMsg({ type: null, text: "" });
@@ -136,7 +140,7 @@ export default function LightLandingPage() {
           createLeadInput: { ...data, budget: Number(data.budget) },
         },
       });
-      const status = response.data.createLead.status;
+      const status = response.data?.createLead?.status;
 
       if (status === "QUALIFIED")
         setMsg({
@@ -169,43 +173,68 @@ export default function LightLandingPage() {
   return (
     <HeroSection>
       <CssBaseline />
-      
+
       <Container maxWidth="lg">
         <Grid container spacing={6} alignItems="center" justifyContent="center">
-          
           {/* Left Text */}
-          <Grid item xs={12} md={6}>
-             <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }}>
-               <Chip 
-                  label="🚀 Now Accepting New Projects" 
-                  sx={{ bgcolor: "#eef2ff", color: "#6366f1", fontWeight: "bold", mb: 3 }} 
-               />
-               
-               <Typography variant="h2" fontWeight="900" color="#0f172a" lineHeight={1.2} mb={3}>
-                  Build Faster.<br/>Scale Smarter.
-               </Typography>
-               
-               <Typography variant="h6" color="#64748b" mb={4} fontWeight="400" lineHeight={1.6}>
-                  We transform complex ideas into elegant software solutions. Get a free estimation instantly.
-               </Typography>
+          <Grid size={{ xs: 12, md: 6 }}>
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <Chip
+                label="🚀 Now Accepting New Projects"
+                sx={{
+                  bgcolor: "#eef2ff",
+                  color: "#6366f1",
+                  fontWeight: "bold",
+                  mb: 3,
+                }}
+              />
 
-               <Box display="flex" flexDirection="column" gap={2}>
-                  {[
-                    "AI-Powered Automation",
-                    "Custom Web & App Development",
-                    "Enterprise Scalability"
-                  ].map((item, i) => (
-                    <Box key={i} display="flex" alignItems="center" gap={2}>
-                       <CheckCircle sx={{ color: "#10b981" }} />
-                       <Typography fontWeight="500" color="#334155">{item}</Typography>
-                    </Box>
-                  ))}
-               </Box>
-             </motion.div>
+              <Typography
+                variant="h2"
+                fontWeight="900"
+                color="#0f172a"
+                lineHeight={1.2}
+                mb={3}
+              >
+                Build Faster.
+                <br />
+                Scale Smarter.
+              </Typography>
+
+              <Typography
+                variant="h6"
+                color="#64748b"
+                mb={4}
+                fontWeight="400"
+                lineHeight={1.6}
+              >
+                We transform complex ideas into elegant software solutions. Get
+                a free estimation instantly.
+              </Typography>
+
+              <Box display="flex" flexDirection="column" gap={2}>
+                {[
+                  "AI-Powered Automation",
+                  "Custom Web & App Development",
+                  "Enterprise Scalability",
+                ].map((item, i) => (
+                  <Box key={i} display="flex" alignItems="center" gap={2}>
+                    <CheckCircle sx={{ color: "#10b981" }} />
+                    <Typography fontWeight="500" color="#334155">
+                      {item}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </motion.div>
           </Grid>
 
           {/* Right Form Card */}
-          <Grid item xs={12} md={6} display="flex" justifyContent="center">
+          <Grid size={{ xs: 12, md: 6 }} display="flex" justifyContent="center">
             <LightCard
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
@@ -213,13 +242,13 @@ export default function LightLandingPage() {
             >
               <Box mb={4}>
                 <Box display="flex" alignItems="center" gap={1} mb={1}>
-                   <RocketLaunch sx={{ color: "#6366f1" }} />
-                   <Typography variant="h6" fontWeight="bold" color="#0f172a">
-                     Start Your Project
-                   </Typography>
+                  <RocketLaunch sx={{ color: "#6366f1" }} />
+                  <Typography variant="h6" fontWeight="bold" color="#0f172a">
+                    Start Your Project
+                  </Typography>
                 </Box>
                 <Typography variant="body2" color="#64748b">
-                   Fill in the details below to get an instant estimation.
+                  Fill in the details below to get an instant estimation.
                 </Typography>
               </Box>
 
@@ -234,76 +263,160 @@ export default function LightLandingPage() {
                 </motion.div>
               )}
 
-              <Box component="form" onSubmit={handleSubmit(onSubmit)} display="flex" flexDirection="column" gap={2.5}>
-                
+              <Box
+                component="form"
+                onSubmit={handleSubmit(onSubmit)}
+                display="flex"
+                flexDirection="column"
+                gap={2.5}
+              >
                 <LightInput
-                  fullWidth label="Full Name" placeholder="John Doe" variant="outlined"
-                  InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutline /></InputAdornment> }}
+                  fullWidth
+                  label="Full Name"
+                  placeholder="John Doe"
+                  variant="outlined"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonOutline />
+                      </InputAdornment>
+                    ),
+                  }}
                   {...register("name", { required: "Name is required" })}
-                  error={!!errors.name} helperText={errors.name?.message}
+                  error={!!errors.name}
+                  helperText={errors.name?.message}
                 />
 
                 <LightInput
-                  fullWidth label="Email Address" placeholder="john@example.com" variant="outlined"
-                  InputProps={{ startAdornment: <InputAdornment position="start"><MailOutline /></InputAdornment> }}
-                  {...register("email", { required: "Email required", pattern: { value: /^\S+@\S+$/i, message: "Invalid email" } })}
-                  error={!!errors.email} helperText={errors.email?.message}
+                  fullWidth
+                  label="Email Address"
+                  placeholder="john@example.com"
+                  variant="outlined"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <MailOutline />
+                      </InputAdornment>
+                    ),
+                  }}
+                  {...register("email", {
+                    required: "Email required",
+                    pattern: { value: /^\S+@\S+$/i, message: "Invalid email" },
+                  })}
+                  error={!!errors.email}
+                  helperText={errors.email?.message}
                 />
 
                 <LightInput
-                  fullWidth label="Phone Number" placeholder="+91 9876543210" variant="outlined"
-                  InputProps={{ startAdornment: <InputAdornment position="start"><PhoneIphone /></InputAdornment> }}
-                  {...register("phone", { required: "Phone required", minLength: { value: 10, message: "Min 10 digits" } })}
-                  error={!!errors.phone} helperText={errors.phone?.message}
+                  fullWidth
+                  label="Phone Number"
+                  placeholder="+91 9876543210"
+                  variant="outlined"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIphone />
+                      </InputAdornment>
+                    ),
+                  }}
+                  {...register("phone", {
+                    required: "Phone required",
+                    minLength: { value: 10, message: "Min 10 digits" },
+                  })}
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
                 />
 
                 <Grid container spacing={2}>
-                   <Grid item xs={6}>
-                      <LightInput
-                        fullWidth label="Budget (₹)" type="number" variant="outlined"
-                        InputProps={{ startAdornment: <InputAdornment position="start"><MonetizationOnOutlinedIcon /></InputAdornment> }}
-                        {...register("budget", { required: "Required" })}
-                        error={!!errors.budget} helperText={errors.budget?.message}
-                      />
-                   </Grid>
-                   <Grid item xs={6}>
-                      <LightInput
-                        select fullWidth label="Service" defaultValue="Web Development" variant="outlined"
-                        InputProps={{ startAdornment: <InputAdornment position="start"><Code /></InputAdornment> }}
-                        {...register("serviceType")}
-                      >
-                        <MenuItem value="Web Development">Web Dev</MenuItem>
-                        <MenuItem value="App Development">App Dev</MenuItem>
-                        <MenuItem value="AI Automation">AI Automation</MenuItem>
-                      </LightInput>
-                   </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <LightInput
+                      fullWidth
+                      label="Budget (₹)"
+                      type="number"
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <MonetizationOnOutlinedIcon />
+                          </InputAdornment>
+                        ),
+                      }}
+                      {...register("budget", { required: "Required" })}
+                      error={!!errors.budget}
+                      helperText={errors.budget?.message}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 6 }}>
+                    <LightInput
+                      select
+                      fullWidth
+                      label="Service"
+                      defaultValue="Web Development"
+                      variant="outlined"
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Code />
+                          </InputAdornment>
+                        ),
+                      }}
+                      {...register("serviceType")}
+                    >
+                      <MenuItem value="Web Development">Web Dev</MenuItem>
+                      <MenuItem value="App Development">App Dev</MenuItem>
+                      <MenuItem value="AI Automation">AI Automation</MenuItem>
+                    </LightInput>
+                  </Grid>
                 </Grid>
 
                 <Button
-                  type="submit" fullWidth size="large" disabled={loading}
+                  type="submit"
+                  fullWidth
+                  size="large"
+                  disabled={loading}
                   endIcon={!loading && <ArrowForward />}
                   sx={{
-                    mt: 2, py: 1.8, fontSize: "1rem", fontWeight: "bold", textTransform: "none", borderRadius: "12px",
-                    background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+                    mt: 2,
+                    py: 1.8,
+                    fontSize: "1rem",
+                    fontWeight: "bold",
+                    textTransform: "none",
+                    borderRadius: "12px",
+                    background:
+                      "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
                     color: "white",
                     boxShadow: "0 4px 6px -1px rgba(79, 70, 229, 0.2)",
                     transition: "all 0.2s",
                     "&:hover": {
-                      background: "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
+                      background:
+                        "linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)",
                       transform: "translateY(-1px)",
-                      boxShadow: "0 10px 15px -3px rgba(79, 70, 229, 0.4)"
+                      boxShadow: "0 10px 15px -3px rgba(79, 70, 229, 0.4)",
                     },
                   }}
                 >
-                  {loading ? <CircularProgress size={24} sx={{ color: "white" }} /> : "Get Estimation"}
+                  {loading ? (
+                    <CircularProgress size={24} sx={{ color: "white" }} />
+                  ) : (
+                    "Get Estimation"
+                  )}
                 </Button>
 
                 <Box mt={2} textAlign="center">
-                   <Link href="/login" style={{ color: '#64748b', textDecoration: 'none', fontSize: '0.85rem' }}>
-                      Admin Access <span style={{ color: '#6366f1', fontWeight: 'bold' }}>&rarr;</span>
-                   </Link>
+                  <Link
+                    href="/login"
+                    style={{
+                      color: "#64748b",
+                      textDecoration: "none",
+                      fontSize: "0.85rem",
+                    }}
+                  >
+                    Admin Access{" "}
+                    <span style={{ color: "#6366f1", fontWeight: "bold" }}>
+                      &rarr;
+                    </span>
+                  </Link>
                 </Box>
-
               </Box>
             </LightCard>
           </Grid>

@@ -85,10 +85,29 @@ export default function BookingPage() {
 
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
-  const [successData, setSuccessData] = useState<any>(null);
+  const [successData, setSuccessData] = useState<{ _id: string; meetingLink?: string; status?: string } | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const [createBooking, { loading }] = useMutation(CREATE_BOOKING_MUTATION);
+  type CreateBookingResponse = {
+    createBooking: {
+      _id: string;
+      meetingLink?: string;
+      status?: string;
+    };
+  };
+
+  type CreateBookingVars = {
+    createBookingInput: {
+      leadId: string;
+      date: string;
+      timeSlot: string;
+    };
+  };
+
+  const [createBooking, { loading }] = useMutation<
+    CreateBookingResponse,
+    CreateBookingVars
+  >(CREATE_BOOKING_MUTATION);
 
   const handleConfirm = async () => {
     if (!selectedDate || !selectedSlot) {
@@ -97,7 +116,7 @@ export default function BookingPage() {
     }
 
     try {
-      const { data } = await createBooking({
+      const result = await createBooking({
         variables: {
           createBookingInput: {
             leadId: leadId,
@@ -106,9 +125,15 @@ export default function BookingPage() {
           },
         },
       });
-      setSuccessData(data.createBooking);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Booking failed. Try another slot.");
+      const booking = result.data?.createBooking;
+      if (booking) {
+        setSuccessData(booking);
+      } else {
+        setErrorMsg("Booking failed. Try another slot.");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMsg(message || "Booking failed. Try another slot.");
     }
   };
 
@@ -248,7 +273,7 @@ export default function BookingPage() {
           </Typography>
           <Grid container spacing={2} mb={4}>
             {TIME_SLOTS.map((slot) => (
-              <Grid item key={slot}>
+              <Grid  component="div" key={slot}>
                 <Chip
                   label={slot}
                   onClick={() => setSelectedSlot(slot)}
