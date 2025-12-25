@@ -134,7 +134,7 @@ export class MailService {
 
     try {
       await this.transporter.sendMail({
-        from: '"My CRM Team" <your-email@gmail.com>',
+        from: `"My CRM Team" <${process.env.MAIL_USER}>`,
         to,
         subject,
         html,
