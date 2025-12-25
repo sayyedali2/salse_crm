@@ -14,4 +14,4 @@ async function bootstrap() {
   // Render automatically PORT assign karta hai, fallback 3001 hai
   await app.listen(process.env.PORT ?? 3001);
 }
-bootstrap();
+void bootstrap();
