@@ -19,15 +19,21 @@ export class MailService {
       <p>Regards,<br/>Sales Team</p>`;
 
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
       });
-      console.log(`Rejection email sent to ${to}`);
+
+      if (error) {
+        console.error('Error sending rejection email:', error);
+        return;
+      }
+
+      console.log(`Rejection email sent to ${to}`, data);
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error('Unexpected error sending email:', error);
     }
   }
 
@@ -51,15 +57,21 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
       });
-      console.log(`Qualification email sent to ${to}`);
+
+      if (error) {
+        console.error('Error sending qualification email:', error);
+        return;
+      }
+
+      console.log(`Qualification email sent to ${to}`, data);
     } catch (error) {
-      console.error('Error sending qualification email:', error);
+      console.error('Unexpected error sending qualification email:', error);
     }
   }
 
@@ -81,15 +93,21 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
       });
-      console.log(`Reminder email sent to ${to}`);
+
+      if (error) {
+        console.error('Error sending reminder email:', error);
+        return;
+      }
+
+      console.log(`Reminder email sent to ${to}`, data);
     } catch (error) {
-      console.error('Error sending reminder:', error);
+      console.error('Unexpected error sending reminder:', error);
     }
   }
 
@@ -103,14 +121,18 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
       });
+
+      if (error) {
+        console.error('Error sending ack email:', error);
+      }
     } catch (error) {
-      console.error('Error sending ack email:', error);
+      console.error('Unexpected error sending ack email:', error);
     }
   }
 
@@ -124,7 +146,7 @@ export class MailService {
     `;
 
     try {
-      await this.resend.emails.send({
+      const { data, error } = await this.resend.emails.send({
         from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
@@ -136,9 +158,15 @@ export class MailService {
           },
         ],
       });
-      console.log(`Proposal PDF sent to ${to}`);
+
+      if (error) {
+        console.error('Error sending proposal:', error);
+        return;
+      }
+
+      console.log(`Proposal PDF sent to ${to}`, data);
     } catch (error) {
-      console.error('Error sending proposal:', error);
+      console.error('Unexpected error sending proposal:', error);
     }
   }
 }
