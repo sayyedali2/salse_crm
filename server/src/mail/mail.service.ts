@@ -7,7 +7,7 @@ export class MailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 465, // ✅ Port 587 use karein
+      port: 587, // ✅ Port 587 use karein
       secure: false, // ✅ 587 ke liye False
       auth: {
         user: process.env.MAIL_USER,
