@@ -1,19 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
+
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      // 👇 YE HAI MAGIC LINE (Iske bina Render par Timeout aata hai)
-      family: 4,
-    } as any);
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
   async sendRejectionEmail(to: string, name: string) {
@@ -26,8 +19,8 @@ export class MailService {
       <p>Regards,<br/>Sales Team</p>`;
 
     try {
-      await this.transporter.sendMail({
-        from: process.env.MAIL_USER,
+      await this.resend.emails.send({
+        from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
@@ -58,8 +51,8 @@ export class MailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: '"My CRM Team" <your-email@gmail.com>',
+      await this.resend.emails.send({
+        from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
@@ -88,8 +81,8 @@ export class MailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: '"My CRM Team" <your-email@gmail.com>',
+      await this.resend.emails.send({
+        from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
@@ -110,8 +103,8 @@ export class MailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: '"My CRM Team" <your-email@gmail.com>',
+      await this.resend.emails.send({
+        from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
@@ -131,8 +124,8 @@ export class MailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: `"My CRM Team" <${process.env.MAIL_USER}>`,
+      await this.resend.emails.send({
+        from: 'My CRM Team <onboarding@resend.dev>',
         to,
         subject,
         html,
@@ -140,7 +133,6 @@ export class MailService {
           {
             filename: 'Proposal.pdf',
             content: pdfBuffer,
-            contentType: 'application/pdf',
           },
         ],
       });
