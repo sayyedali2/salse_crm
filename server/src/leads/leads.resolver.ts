@@ -40,6 +40,11 @@ export class LeadsResolver {
     return this.leadsService.updateLead(id, data);
   }
 
+  @Mutation(() => Boolean)
+  async deleteLead(@Args('id', { type: () => String }) id: string) {
+    return this.leadsService.deleteLead(id);
+  }
+
   @Mutation(() => Boolean) // Returns true if sent successfully
   async sendProposal(@Args('id') id: string) {
     // 1. PDF Generate karo
