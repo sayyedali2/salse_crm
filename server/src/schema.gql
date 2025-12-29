@@ -49,6 +49,7 @@ type Query {
 type Mutation {
   createLead(createLeadInput: CreateLeadInput!): Lead!
   updateLeadStatus(id: String!, status: String!): Lead!
+  UpdateLead(id: String!, data: UpdateLeadInput!): Lead!
   sendProposal(id: String!): Boolean!
   createBooking(createBookingInput: CreateBookingInput!): Booking!
   login(email: String!, password: String!): LoginResponse!
@@ -61,6 +62,15 @@ input CreateLeadInput {
   phone: String!
   budget: Int!
   serviceType: String!
+}
+
+input UpdateLeadInput {
+  name: String
+  email: String
+  phone: String
+  budget: Int
+  serviceType: String
+  status: String
 }
 
 input CreateBookingInput {
