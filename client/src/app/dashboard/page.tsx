@@ -10,7 +10,6 @@ import {
   LinearProgress,
   CssBaseline,
   IconButton,
-  Tooltip,
   CircularProgress,
   Snackbar,
   Alert,
@@ -42,9 +41,7 @@ import {
 // Icons
 import {
   AttachMoney,
-  Phone,
   PictureAsPdf,
-  Email,
   Close,
   History,
   ViewList,
@@ -52,16 +49,10 @@ import {
   Edit,
   TrendingUp,
   Group,
-  Assignment,
 } from "@mui/icons-material";
 
 // Charts
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
   AreaChart,
