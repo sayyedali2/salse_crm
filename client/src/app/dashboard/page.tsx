@@ -30,11 +30,13 @@ import {
   TableRow,
   Paper,
   Select,
+  Menu,
   MenuItem,
   FormControl,
   SelectChangeEvent,
   Container,
   Grid,
+  TextField,
 } from "@mui/material";
 
 // Icons
@@ -46,6 +48,7 @@ import {
   Close,
   History,
   ViewList,
+  MoreVert,
   Edit,
   TrendingUp,
   Group,
@@ -79,6 +82,14 @@ interface Lead {
 interface GetLeadsData {
   leads: Lead[];
 }
+interface UpdateLeadInput {
+  name?: string;
+  budget?: number;
+  status?: string;
+  serviceType?: string;
+  phone?: string;
+  email?: string;
+}
 
 const GET_LEADS = gql`
   query GetLeads {
@@ -90,6 +101,19 @@ const GET_LEADS = gql`
       serviceType
       phone
       email
+    }
+  }
+`;
+const UPDATE_LEAD = gql`
+  mutation UpdateLead($id: String!, $data: UpdateLeadInput!) {
+    UpdateLead(id: $id, data: $data) {
+      _id
+      name
+      email
+      phone
+      status
+      budget
+      serviceType
     }
   }
 `;
@@ -113,7 +137,7 @@ export default function DashboardPage() {
   const { data, loading, refetch } = useQuery<GetLeadsData>(GET_LEADS);
   const [updateStatus] = useMutation(UPDATE_STATUS_MUTATION);
   const [sendProposal] = useMutation(SEND_PROPOSAL_MUTATION);
-
+  const [updateLead] = useMutation(UPDATE_LEAD);
   const [tabValue, setTabValue] = useState(0);
   const [activeLeads, setActiveLeads] = useState<Lead[]>([]);
   const [historyLeads, setHistoryLeads] = useState<Lead[]>([]);
@@ -147,7 +171,8 @@ export default function DashboardPage() {
       const active: Lead[] = [];
       const history: Lead[] = [];
       data.leads.forEach((lead: Lead) => {
-        if (["NEW", "QUALIFIED"].includes(lead.status)) active.push(lead);
+        if (["NEW", "QUALIFIED", "PROPOSAL_SENT","MEETING_BOOKED"].includes(lead.status))
+          active.push(lead);
         else history.push(lead);
       });
       setActiveLeads(active);
@@ -192,13 +217,58 @@ export default function DashboardPage() {
         return { color: "#d97706", bg: "#fffbeb", label: "Qualified" };
       case "WON":
         return { color: "#059669", bg: "#ecfdf5", label: "Won" };
+      case "PROPOSAL_SENT":
+        return { color: "#ff05deff", bg: "#fff2f2", label: "Proposal Sent" };
       case "REJECTED":
         return { color: "#dc2626", bg: "#fef2f2", label: "Rejected" };
+      case "MEETING_BOOKED":
+        return { color: "#464646ff", bg: "#fef2f2", label: "Rejected" };
       default:
         return { color: "grey", bg: "#f3f4f6", label: status };
     }
   };
 
+  const STATUS_OPTIONS = [
+    "NEW",
+    "QUALIFIED",
+    "WON",
+    "PROPOSAL_SENT",
+    "REJECTED",
+    "MEETING_BOOKED"
+  ];
+  const Service_Type = ["Web Dev", "App Dev", "AI Automation"];
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [formData, setFormData] = useState<UpdateLeadInput>({
+    name: "",
+    budget: undefined,
+    status: "",
+    serviceType: "",
+    phone: "",
+    email: "",
+  });
+
+  const handleEditLead = (lead: Lead) => {
+    setSelectedLead(lead);
+    setFormData({
+      name: lead.name,
+      budget: lead.budget,
+      status: lead.status,
+      serviceType: lead.serviceType,
+      phone: lead.phone,
+      email: lead.email,
+    });
+  };
+  const handleSave = async () => {
+    
+    if (!selectedLead) return;
+    
+
+    // API call (example)
+    await updateLead({variables: {id: selectedLead._id, data: formData}});
+
+    setSelectedLead(null); // dialog close
+  };
   if (loading) return <LinearProgress />;
 
   return (
@@ -505,8 +575,27 @@ export default function DashboardPage() {
                               color: getStatusColor(lead.status).color,
                             }}
                           >
-                            <MenuItem value="NEW">New Inquiry</MenuItem>
-                            <MenuItem value="QUALIFIED">Qualified</MenuItem>
+                            <MenuItem value="NEW" sx={{ color: "#6366f1" }}>
+                              New Inquiry
+                            </MenuItem>
+                            <MenuItem
+                              value="QUALIFIED"
+                              sx={{ color: "#d97706" }}
+                            >
+                              Qualified
+                            </MenuItem>
+                            <MenuItem
+                              value="PROPOSAL_SENT"
+                              sx={{ color: "#ff05deff" }}
+                            >
+                              Proposal Sent
+                            </MenuItem>
+                            <MenuItem
+                              value="MEETING_BOOKED"
+                              sx={{ color: "#464646ff" }}
+                            >
+                              Meeting Booked
+                            </MenuItem>
                             <MenuItem value="WON" sx={{ color: "#059669" }}>
                               Mark Won
                             </MenuItem>
@@ -533,28 +622,42 @@ export default function DashboardPage() {
 
                     <TableCell align="right">
                       <Box display="flex" justifyContent="flex-end" gap={1}>
-                        <Tooltip title="Send Proposal">
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleSendProposal(e, lead._id)}
-                            disabled={proposalLoading === lead._id}
-                            sx={{
-                              color: "#ef4444",
-                              bgcolor: "#fef2f2",
-                              "&:hover": { bgcolor: "#fee2e2" },
+                        <IconButton
+                          size="small"
+                          onClick={(e) => setAnchorEl(e.currentTarget)}
+                        >
+                          <MoreVert fontSize="small" />
+                        </IconButton>
+
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl)}
+                          onClose={() => setAnchorEl(null)}
+                        >
+                          <MenuItem
+                            onClick={(e) => {
+                              handleSendProposal(e, lead._id);
+                              setAnchorEl(null);
                             }}
                           >
                             {proposalLoading === lead._id ? (
                               <CircularProgress size={16} />
                             ) : (
-                              <PictureAsPdf fontSize="small" />
+                              <PictureAsPdf
+                                fontSize="small"
+                                sx={{
+                                  color: "#ef4444",
+                                  bgcolor: "#fef2f2",
+                                  "&:hover": { bgcolor: "#fee2e2" },
+                                }}
+                              />
                             )}
-                          </IconButton>
-                        </Tooltip>
-                        <Tooltip title="View Details">
-                          <IconButton
-                            size="small"
-                            onClick={() => setSelectedLead(lead)}
+                          </MenuItem>
+                          <MenuItem
+                            onClick={(e) => {
+                              handleEditLead(lead);
+                              setAnchorEl(null);
+                            }}
                             sx={{
                               color: "#6366f1",
                               bgcolor: "#eef2ff",
@@ -562,8 +665,8 @@ export default function DashboardPage() {
                             }}
                           >
                             <Edit fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                          </MenuItem>
+                        </Menu>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -578,9 +681,7 @@ export default function DashboardPage() {
       <Dialog
         open={!!selectedLead}
         onClose={() => setSelectedLead(null)}
-        maxWidth="sm"
         fullWidth
-        PaperProps={{ sx: { borderRadius: 3 } }}
       >
         {selectedLead && (
           <>
@@ -599,63 +700,74 @@ export default function DashboardPage() {
               </Box>
             </DialogTitle>
             <DialogContent sx={{ pt: 3 }}>
-              <Grid container spacing={2}>
-                <Grid size={{ xs: 6 }}>
-                  <Box
-                    p={2}
-                    bgcolor="#f8fafc"
-                    borderRadius={2}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                  >
-                    <Avatar
-                      sx={{
-                        width: 50,
-                        height: 50,
-                        bgcolor: "#eef2ff",
-                        color: "#6366f1",
-                      }}
-                    >
-                      {selectedLead.name[0]}
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" fontWeight="bold">
-                        {selectedLead.name}
-                      </Typography>
-                      <Typography variant="body2" color="textSecondary">
-                        {selectedLead.email}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <Typography variant="caption" color="textSecondary">
-                    Phone
-                  </Typography>
-                  <Typography fontWeight="500">{selectedLead.phone}</Typography>
-                </Grid>
-                <Grid size={{ xs: 6 }}>
-                  <Typography variant="caption" color="textSecondary">
-                    Budget
-                  </Typography>
-                  <Typography fontWeight="500">
-                    ₹{selectedLead.budget.toLocaleString()}
-                  </Typography>
-                </Grid>
-              </Grid>
+              <TextField
+                label="Name"
+                fullWidth
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+              />
+              <TextField
+                label="Email"
+                fullWidth
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+              />
+              <TextField
+                label="Phone"
+                fullWidth
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+              />
+              <TextField
+                label="Status"
+                fullWidth
+                select
+                value={formData.status}
+                onChange={(e) =>
+                  setFormData({ ...formData, status: e.target.value })
+                }
+              >
+                {STATUS_OPTIONS.map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Service Type"
+                fullWidth
+                select
+                value={formData.serviceType}
+                onChange={(e) =>
+                  setFormData({ ...formData, serviceType: e.target.value })
+                }
+              >
+                {Service_Type.map((serviceType) => (
+                  <MenuItem key={serviceType} value={serviceType}>
+                    {serviceType}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <TextField
+                label="Budget"
+                type="number"
+                fullWidth
+                value={formData.budget}
+                onChange={(e) =>
+                  setFormData({ ...formData, budget: Number(e.target.value) })
+                }
+              />
             </DialogContent>
             <DialogActions sx={{ p: 2, borderTop: "1px solid #f1f5f9" }}>
-              <Button
-                variant="contained"
-                color="error"
-                startIcon={<PictureAsPdf />}
-                onClick={(e) => handleSendProposal(e, selectedLead._id)}
-                disabled={proposalLoading === selectedLead._id}
-              >
-                {proposalLoading === selectedLead._id
-                  ? "Sending..."
-                  : "Send Proposal PDF"}
+              <Button onClick={() => setSelectedLead(null)}>Cancel</Button>
+              <Button variant="contained" onClick={handleSave}>
+                Save Changes
               </Button>
             </DialogActions>
           </>

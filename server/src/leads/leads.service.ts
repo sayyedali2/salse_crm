@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Lead, LeadDocument } from './schemas/lead.schema';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
@@ -6,6 +6,7 @@ import { CreateLeadInput } from './dto/create-lead.input';
 import { MailService } from '../mail/mail.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import PDFDocument = require('pdfkit');
+import { UpdateLeadInput } from './dto/update-lead';
 
 @Injectable()
 export class LeadsService {
@@ -113,6 +114,20 @@ export class LeadsService {
     });
 
     return lead.save();
+  }
+
+  async updateLead(id: string, data: UpdateLeadInput) {
+    const updatedLead = await this.leadModel.findByIdAndUpdate(
+      id,
+      data,
+      { new: true }, // updated document return karega
+    );
+
+    if (!updatedLead) {
+      throw new BadRequestException('Lead not found!!');
+    }
+
+    return updatedLead;
   }
 
   // ... LeadsService class ke andar

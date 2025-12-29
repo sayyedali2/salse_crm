@@ -11,7 +11,8 @@ import {
 
 // Backend URL
 const GRAPHQL_ENDPOINT = "https://sales-pilot-api.onrender.com/graphql";
-
+// https://sales-pilot-api.onrender.com/graphql
+// http://localhost:3001/graphql
 function makeClient() {
   // 1. HTTP Link
   const httpLink = new HttpLink({

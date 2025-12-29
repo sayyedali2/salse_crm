@@ -3,6 +3,7 @@ import { LeadsService } from './leads.service';
 import { CreateLeadInput } from './dto/create-lead.input';
 import { Lead } from './schemas/lead.schema';
 import { MailService } from '../mail/mail.service';
+import { UpdateLeadInput } from './dto/update-lead';
 
 @Resolver(() => Lead)
 export class LeadsResolver {
@@ -27,8 +28,16 @@ export class LeadsResolver {
   async updateLeadStatus(
     @Args('id', { type: () => String }) id: string,
     @Args('status', { type: () => String }) status: string,
-  ) {
+  ): Promise<Lead> {
     return this.leadsService.updateStatus(id, status);
+  }
+
+  @Mutation(() => Lead)
+  async UpdateLead(
+    @Args('id', { type: () => String }) id: string,
+    @Args('data', { type: () => UpdateLeadInput }) data: UpdateLeadInput,
+  ) {
+    return this.leadsService.updateLead(id, data);
   }
 
   @Mutation(() => Boolean) // Returns true if sent successfully
