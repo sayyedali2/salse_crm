@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Lead, LeadDocument } from './schemas/lead.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateLeadInput } from './dto/create-lead.input';
 import { MailService } from '../mail/mail.service';
@@ -130,6 +130,18 @@ export class LeadsService {
     return updatedLead;
   }
 
+  async deleteLead(id: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error('Invalid ID');
+    }
+
+    const deletedLead = await this.leadModel.findByIdAndDelete(id);
+    if (!deletedLead) {
+      throw new Error('Lead not found');
+    }
+
+    return true; // Successfully deleted
+  }
   // ... LeadsService class ke andar
 
   // ✅ CRON JOB: Har roz subah 10 baje chalega

@@ -50,6 +50,7 @@ type Mutation {
   createLead(createLeadInput: CreateLeadInput!): Lead!
   updateLeadStatus(id: String!, status: String!): Lead!
   UpdateLead(id: String!, data: UpdateLeadInput!): Lead!
+  deleteLead(id: String!): Boolean!
   sendProposal(id: String!): Boolean!
   createBooking(createBookingInput: CreateBookingInput!): Booking!
   login(email: String!, password: String!): LoginResponse!
