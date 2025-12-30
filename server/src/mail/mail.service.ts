@@ -1,46 +1,226 @@
-import { Injectable } from '@nestjs/common';
-import { Resend } from 'resend';
+// import { Injectable } from '@nestjs/common';
+// import { Resend } from 'resend';
 
+// @Injectable()
+// export class MailService {
+//   private resend: Resend;
+
+//   constructor() {
+//     this.resend = new Resend(process.env.RESEND_API_KEY);
+//   }
+
+//   async sendRejectionEmail(to: string, name: string) {
+//     const subject = 'Update regarding your project inquiry';
+//     const html = `
+//     <p> Hi ${name},</p>
+//     <p>Thank you for reaching out to us.</p>
+//       <p>Unfortunately, based on your current budget, we are unable to take this project forward at this time. Our minimum engagement starts at higher packages.</p>
+//       <p>We wish you the best in your search.</p>
+//       <p>Regards,<br/>Sales Team</p>`;
+
+//     try {
+//       const { data, error } = await this.resend.emails.send({
+//         from: 'My CRM Team <onboarding@resend.dev>',
+//         to,
+//         subject,
+//         html,
+//       });
+
+//       if (error) {
+//         console.error('Error sending rejection email:', error);
+//         return;
+//       }
+
+//       console.log(`Rejection email sent to ${to}`, data);
+//     } catch (error) {
+//       console.error('Unexpected error sending email:', error);
+//     }
+//   }
+
+//   async sendQualificationEmail(to: string, name: string) {
+//     const subject = 'Good News! Your Project is Qualified';
+//     // Jab Frontend ban jayega, ye link actual booking page ka hoga
+//     const bookingLink = 'http://localhost:3000/booking';
+
+//     const html = `
+//       <p>Hi ${name},</p>
+//       <p>Thanks for sharing your project details. We are excited to tell you that your requirements match our expertise!</p>
+//       <p><b>Next Step:</b> Please schedule a quick discovery call with our team using the link below:</p>
+//       <p>
+//         <a href="${bookingLink}" style="background-color: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+//           Book Your Meeting
+//         </a>
+//       </p>
+//       <p>Or click here: <a href="${bookingLink}">${bookingLink}</a></p>
+//       <p>Looking forward to speaking with you.</p>
+//       <p>Regards,<br/>Sales Team</p>
+//     `;
+
+//     try {
+//       const { data, error } = await this.resend.emails.send({
+//         from: 'My CRM Team <onboarding@resend.dev>',
+//         to,
+//         subject,
+//         html,
+//       });
+
+//       if (error) {
+//         console.error('Error sending qualification email:', error);
+//         return;
+//       }
+
+//       console.log(`Qualification email sent to ${to}`, data);
+//     } catch (error) {
+//       console.error('Unexpected error sending qualification email:', error);
+//     }
+//   }
+
+//   async sendBookingReminder(to: string, name: string) {
+//     const subject = 'Reminder: Let’s schedule your project discussion';
+//     const bookingLink = 'http://localhost:3001/booking'; // Dummy link
+
+//     const html = `
+//       <p>Hi ${name},</p>
+//       <p>We noticed that you qualified for our project program but haven't booked your meeting yet.</p>
+//       <p>Slots are filling up fast. Please select a time that works for you:</p>
+//       <p>
+//         <a href="${bookingLink}" style="background-color: #f59e0b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+//           Book Now
+//         </a>
+//       </p>
+//       <p>If you have any questions, feel free to reply to this email.</p>
+//       <p>Regards,<br/>Sales Team</p>
+//     `;
+
+//     try {
+//       const { data, error } = await this.resend.emails.send({
+//         from: 'My CRM Team <onboarding@resend.dev>',
+//         to,
+//         subject,
+//         html,
+//       });
+
+//       if (error) {
+//         console.error('Error sending reminder email:', error);
+//         return;
+//       }
+
+//       console.log(`Reminder email sent to ${to}`, data);
+//     } catch (error) {
+//       console.error('Unexpected error sending reminder:', error);
+//     }
+//   }
+
+//   async sendAcknowledgementEmail(to: string, name: string) {
+//     const subject = 'We have received your project inquiry';
+//     const html = `
+//       <p>Hi ${name},</p>
+//       <p>Thank you for your interest. We have received your project details.</p>
+//       <p>Our team is currently reviewing your requirements and budget. We will get back to you within 24 hours to discuss the possibilities.</p>
+//       <p>Regards,<br/>Sales Team</p>
+//     `;
+
+//     try {
+//       const { data, error } = await this.resend.emails.send({
+//         from: 'My CRM Team <onboarding@resend.dev>',
+//         to,
+//         subject,
+//         html,
+//       });
+
+//       if (error) {
+//         console.error('Error sending ack email:', error);
+//       }
+//     } catch (error) {
+//       console.error('Unexpected error sending ack email:', error);
+//     }
+//   }
+
+//   async sendProposalEmail(to: string, name: string, pdfBuffer: Buffer) {
+//     const subject = 'Project Proposal - SalesPilot';
+//     const html = `
+//       <p>Hi ${name},</p>
+//       <p>Please find attached the proposal for your project.</p>
+//       <p>Let us know if you have any questions.</p>
+//       <p>Regards,<br/>Sales Team</p>
+//     `;
+
+//     try {
+//       const { data, error } = await this.resend.emails.send({
+//         from: 'My CRM Team <onboarding@resend.dev>',
+//         to,
+//         subject,
+//         html,
+//         attachments: [
+//           {
+//             filename: 'Proposal.pdf',
+//             content: pdfBuffer,
+//           },
+//         ],
+//       });
+
+//       if (error) {
+//         console.error('Error sending proposal:', error);
+//         return;
+//       }
+
+//       console.log(`Proposal PDF sent to ${to}`, data);
+//     } catch (error) {
+//       console.error('Unexpected error sending proposal:', error);
+//     }
+//   }
+// }
+
+import { Injectable } from '@nestjs/common';
+import nodemailer, { SentMessageInfo, Transporter } from 'nodemailer';
+
+interface CustomSentMessageInfo {
+  messageId?: string;
+  accepted?: string[];
+  rejected?: string[];
+  response?: string;
+}
 @Injectable()
 export class MailService {
-  private resend: Resend;
+  private transporter: Transporter<SentMessageInfo>;
 
   constructor() {
-    this.resend = new Resend(process.env.RESEND_API_KEY);
+    this.transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com', // e.g. "smtp.gmail.com"
+      port: Number(587),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: {
+        user: process.env.SMTP_USER ?? '',
+        pass: process.env.SMTP_PASS ?? '',
+      },
+    });
   }
 
-  async sendRejectionEmail(to: string, name: string) {
+  async sendRejectionEmail(to: string, name: string): Promise<void> {
     const subject = 'Update regarding your project inquiry';
     const html = `
-    <p> Hi ${name},</p>
-    <p>Thank you for reaching out to us.</p>
+      <p> Hi ${name},</p>
+      <p>Thank you for reaching out to us.</p>
       <p>Unfortunately, based on your current budget, we are unable to take this project forward at this time. Our minimum engagement starts at higher packages.</p>
       <p>We wish you the best in your search.</p>
       <p>Regards,<br/>Sales Team</p>`;
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'My CRM Team <onboarding@resend.dev>',
+      const info = (await this.transporter.sendMail({
+        from: `"My CRM Team" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,
-      });
-
-      if (error) {
-        console.error('Error sending rejection email:', error);
-        return;
-      }
-
-      console.log(`Rejection email sent to ${to}`, data);
+      })) as unknown as CustomSentMessageInfo;
+      console.log(`Rejection email sent to ${to}`, info.messageId);
     } catch (error) {
-      console.error('Unexpected error sending email:', error);
+      console.error('Error sending rejection email:', error);
     }
   }
 
-  async sendQualificationEmail(to: string, name: string) {
+  async sendQualificationEmail(to: string, name: string): Promise<void> {
     const subject = 'Good News! Your Project is Qualified';
-    // Jab Frontend ban jayega, ye link actual booking page ka hoga
-    const bookingLink = 'http://localhost:3000/booking';
+    const bookingLink = 'https://salse-crm.vercel.app/booking';
 
     const html = `
       <p>Hi ${name},</p>
@@ -57,27 +237,21 @@ export class MailService {
     `;
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'My CRM Team <onboarding@resend.dev>',
+      const info = (await this.transporter.sendMail({
+        from: `"My CRM Team" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,
-      });
-
-      if (error) {
-        console.error('Error sending qualification email:', error);
-        return;
-      }
-
-      console.log(`Qualification email sent to ${to}`, data);
+      })) as unknown as CustomSentMessageInfo;
+      console.log(`Qualification email sent to ${to}`, info.messageId);
     } catch (error) {
-      console.error('Unexpected error sending qualification email:', error);
+      console.error('Error sending qualification email:', error);
     }
   }
 
-  async sendBookingReminder(to: string, name: string) {
+  async sendBookingReminder(to: string, name: string): Promise<void> {
     const subject = 'Reminder: Let’s schedule your project discussion';
-    const bookingLink = 'http://localhost:3001/booking'; // Dummy link
+    const bookingLink = 'https://salse-crm.vercel.app/booking';
 
     const html = `
       <p>Hi ${name},</p>
@@ -93,25 +267,19 @@ export class MailService {
     `;
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'My CRM Team <onboarding@resend.dev>',
+      const info = (await this.transporter.sendMail({
+        from: `"My CRM Team" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,
-      });
-
-      if (error) {
-        console.error('Error sending reminder email:', error);
-        return;
-      }
-
-      console.log(`Reminder email sent to ${to}`, data);
+      })) as unknown as CustomSentMessageInfo;
+      console.log(`Reminder email sent to ${to}`, info.messageId);
     } catch (error) {
-      console.error('Unexpected error sending reminder:', error);
+      console.error('Error sending reminder email:', error);
     }
   }
 
-  async sendAcknowledgementEmail(to: string, name: string) {
+  async sendAcknowledgementEmail(to: string, name: string): Promise<void> {
     const subject = 'We have received your project inquiry';
     const html = `
       <p>Hi ${name},</p>
@@ -121,22 +289,23 @@ export class MailService {
     `;
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'My CRM Team <onboarding@resend.dev>',
+      const info = (await this.transporter.sendMail({
+        from: `"My CRM Team" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,
-      });
-
-      if (error) {
-        console.error('Error sending ack email:', error);
-      }
+      })) as unknown as CustomSentMessageInfo;
+      console.log(`Acknowledgement email sent to ${to}`, info.messageId);
     } catch (error) {
-      console.error('Unexpected error sending ack email:', error);
+      console.error('Error sending acknowledgement email:', error);
     }
   }
 
-  async sendProposalEmail(to: string, name: string, pdfBuffer: Buffer) {
+  async sendProposalEmail(
+    to: string,
+    name: string,
+    pdfBuffer: Buffer,
+  ): Promise<void> {
     const subject = 'Project Proposal - SalesPilot';
     const html = `
       <p>Hi ${name},</p>
@@ -146,8 +315,8 @@ export class MailService {
     `;
 
     try {
-      const { data, error } = await this.resend.emails.send({
-        from: 'My CRM Team <onboarding@resend.dev>',
+      const info = (await this.transporter.sendMail({
+        from: `"My CRM Team" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,
@@ -155,18 +324,13 @@ export class MailService {
           {
             filename: 'Proposal.pdf',
             content: pdfBuffer,
+            contentType: 'application/pdf',
           },
         ],
-      });
-
-      if (error) {
-        console.error('Error sending proposal:', error);
-        return;
-      }
-
-      console.log(`Proposal PDF sent to ${to}`, data);
+      })) as unknown as CustomSentMessageInfo;
+      console.log(`Proposal PDF sent to ${to}`, info.messageId);
     } catch (error) {
-      console.error('Unexpected error sending proposal:', error);
+      console.error('Error sending proposal email:', error);
     }
   }
 }
