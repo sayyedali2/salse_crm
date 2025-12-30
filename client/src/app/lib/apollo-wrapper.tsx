@@ -13,6 +13,7 @@ import {
 const GRAPHQL_ENDPOINT = "https://salsecrm-production.up.railway.app/graphql";
 // https://sales-pilot-api.onrender.com/graphql
 // http://localhost:3001/graphql
+// https://salsecrm-production.up.railway.app/graphql
 function makeClient() {
   // 1. HTTP Link
   const httpLink = new HttpLink({
