@@ -189,10 +189,14 @@ export class MailService {
       host: 'smtp.gmail.com', // e.g. "smtp.gmail.com"
       port: Number(587),
       secure: process.env.SMTP_SECURE === 'true',
+      pool: true,
       auth: {
         user: process.env.SMTP_USER ?? '',
         pass: process.env.SMTP_PASS ?? '',
       },
+      connectionTimeout: 10000, // 10 seconds timeout
+      greetingTimeout: 5000,
+      socketTimeout: 15000,
     });
   }
 
