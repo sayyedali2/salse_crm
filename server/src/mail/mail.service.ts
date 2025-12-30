@@ -193,9 +193,9 @@ export class MailService {
         user: process.env.SMTP_USER ?? '',
         pass: process.env.SMTP_PASS ?? '',
       },
-      connectionTimeout: 10000, // 10 seconds timeout
-      greetingTimeout: 5000,
-      socketTimeout: 15000,
+      connectionTimeout: 100000, // 10 seconds timeout
+      greetingTimeout: 50000,
+      socketTimeout: 150000,
     });
   }
 
