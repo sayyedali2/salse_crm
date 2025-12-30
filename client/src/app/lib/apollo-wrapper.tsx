@@ -10,7 +10,7 @@ import {
 } from "@apollo/experimental-nextjs-app-support/ssr";
 
 // Backend URL
-const GRAPHQL_ENDPOINT = "http://localhost:3001/graphql";
+const GRAPHQL_ENDPOINT = "https://sales-pilot-api.onrender.com/graphql";
 // https://sales-pilot-api.onrender.com/graphql
 // http://localhost:3001/graphql
 function makeClient() {
