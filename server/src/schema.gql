@@ -79,3 +79,9 @@ input CreateBookingInput {
   date: DateTime!
   timeSlot: String!
 }
+
+type Subscription {
+  leadAdded: Lead!
+  leadUpdated: Lead!
+  leadDeleted: String!
+}
