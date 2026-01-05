@@ -15,7 +15,7 @@ export class LeadsResolver {
     private readonly mailService: MailService,
   ) {
     console.log('--- LEADS RESOLVER FORCED INSTANTIATION ---');
-    console.log('PubSub Instance:', globalPubSub);
+    // console.log('PubSub Instance:', globalPubSub)/;
   }
 
   @Subscription(() => Lead)
