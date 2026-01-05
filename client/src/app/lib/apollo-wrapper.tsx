@@ -11,8 +11,8 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { createClient } from "graphql-ws";
 import { getMainDefinition } from "@apollo/client/utilities";
 
-const GRAPHQL_ENDPOINT = "http://localhost:3001/graphql";
-const WEBSOCKET_ENDPOINT = "ws://localhost:3001/graphql";
+const GRAPHQL_ENDPOINT = "https://salsecrm-production.up.railway.app/graphql";
+const WEBSOCKET_ENDPOINT = "wss://salsecrm-production.up.railway.app/graphql";
 
 function makeClient() {
   // 1. Normal rasta (HTTP) - Queries ke liye
