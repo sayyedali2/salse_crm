@@ -39,7 +39,11 @@ export class MailService {
     }
   }
 
-  async sendQualificationEmail(to: string, name: string): Promise<void> {
+  async sendQualificationEmail(
+    to: string,
+    name: string,
+    _id: string,
+  ): Promise<void> {
     try {
       await sgMail.send({
         to,
@@ -49,7 +53,7 @@ export class MailService {
           <p>Hi ${name},</p>
           <p>Your project matches our expertise.</p>
           <p>
-            <a href="https://salse-crm.vercel.app/booking"
+            <a href="https://salse-crm.vercel.app/booking/${_id}"
               style="background:#4CAF50;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;">
               Book Your Meeting
             </a>
@@ -64,7 +68,11 @@ export class MailService {
     }
   }
 
-  async sendBookingReminder(to: string, name: string): Promise<void> {
+  async sendBookingReminder(
+    to: string,
+    name: string,
+    _id: string,
+  ): Promise<void> {
     try {
       await sgMail.send({
         to,
@@ -74,7 +82,7 @@ export class MailService {
           <p>Hi ${name},</p>
           <p>You haven’t booked your meeting yet.</p>
           <p>
-            <a href="https://salse-crm.vercel.app/booking"
+            <a href="https://salse-crm.vercel.app/booking/${_id}"
               style="background:#f59e0b;color:#fff;padding:10px 20px;border-radius:5px;text-decoration:none;">
               Book Now
             </a>
