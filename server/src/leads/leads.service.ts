@@ -56,6 +56,7 @@ export class LeadsService {
         this.mailService.sendQualificationEmail(
           leadToSave.email,
           leadToSave.name,
+          leadToSave._id.toString(),
         );
       }
     } else {
@@ -169,7 +170,11 @@ export class LeadsService {
 
     for (const lead of leadsToRemind) {
       // Send Email
-      await this.mailService.sendBookingReminder(lead.email, lead.name);
+      await this.mailService.sendBookingReminder(
+        lead.email,
+        lead.name,
+        lead._id.toString(),
+      );
 
       // Update Timeline (Taaki dobara email na jaye)
       lead.timeline.push({
