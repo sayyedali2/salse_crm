@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@apollo/client/react";
 import {
   Box,
@@ -56,7 +56,13 @@ import {
 import { Lead } from "@/app/interface/Lead.interface";
 
 // --- TYPES & GRAPHQL ---
-import { GET_LEADS, DELETE_LEAD } from "@/app/graphQL/Lead.graphQl";
+import {
+  GET_LEADS,
+  DELETE_LEAD,
+  LEAD_UPDATED_SUBSCRIPTION,
+  LEAD_ADDED_SUBSCRIPTION,
+  LEAD_DELETED_SUBSCRIPTION,
+} from "@/app/graphQL/Lead.graphQl";
 import { UPDATE_STATUS_MUTATION } from "@/app/graphQL/Status.graphQl";
 import { SEND_PROPOSAL_MUTATION } from "@/app/graphQL/Proposal.graphQl";
 import EditLeadModal from "@/component/dashboard/EditeForm";
@@ -66,63 +72,150 @@ interface GetLeadsData {
 }
 
 export default function Dashboard() {
-  const { data, loading, refetch } = useQuery<GetLeadsData>(GET_LEADS);
+  const { data, loading, subscribeToMore } = useQuery<GetLeadsData>(GET_LEADS, {
+    fetchPolicy: "network-only", // Hamesha fresh data le
+    nextFetchPolicy: "cache-first",
+  });
+
+  // --- 1. SUBSCRIPTION LOGIC ---
+  useEffect(() => {
+    // Lead Added
+    const unsubAdded = subscribeToMore({
+      document: LEAD_ADDED_SUBSCRIPTION,
+      updateQuery: (prev, { subscriptionData }): GetLeadsData => {
+        console.log("SUBSCRIPTION EVENT RECEIVED:", prev);
+        console.log("SUBSCRIPTION EVENT RECEIVED:", subscriptionData);
+        // 1. Check karein ki data aaya bhi hai ya nahi
+        if (!subscriptionData.data) return prev as GetLeadsData;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const newLead = (subscriptionData.data as any).leadAdded;
+
+        // 2. Safety: Agar prev data empty hai toh naya lead return karein
+        if (!prev || !prev.leads) {
+          return { leads: [newLead] } as GetLeadsData;
+        }
+
+        // 3. Duplicate check: Ensure karein ki ye lead list mein pehle se na ho
+        const exists = prev.leads.some((l) => l?._id === newLead._id);
+        if (exists) return prev as GetLeadsData;
+
+        // 4. UI Update (Success Message)
+        setToast({ open: true, msg: "New Lead Received! 🚀", type: "success" });
+
+        // 5. YAHAN HAI FIX: Purani list ka copy banayein aur naya lead jodein
+        return {
+          ...prev,
+          leads: [newLead, ...prev.leads],
+        } as GetLeadsData;
+      },
+      onError: (err) => console.error("Subscription Error:", err),
+    });
+    // Lead Updated
+    const unsubUpdate = subscribeToMore({
+      document: LEAD_UPDATED_SUBSCRIPTION,
+
+      updateQuery: (prev, { subscriptionData }): GetLeadsData => {
+        // 1. Agar data nahi hai, toh purana data as it is return karo
+        if (!subscriptionData.data) return prev as GetLeadsData;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const updatedLead = (subscriptionData.data as any).leadUpdated;
+
+        // 2. Error throw karne ki jagah safely handle karein
+        if (!prev || !prev.leads) {
+          return { leads: [] } as GetLeadsData;
+        }
+
+        // 3. Map logic with Type Casting
+        return {
+          ...prev,
+          leads: prev.leads.map((lead) =>
+            lead?._id === updatedLead._id ? { ...lead, ...updatedLead } : lead
+          ),
+        } as GetLeadsData; // <--- Yeh casting zaroori hai
+      },
+      onError: (err) => console.error("Update Subscription Error:", err),
+    });
+
+    // Lead Deleted
+    const unsubDeleted = subscribeToMore({
+      document: LEAD_DELETED_SUBSCRIPTION,
+      updateQuery: (prev, { subscriptionData }): GetLeadsData => {
+        // 1. Data check aur type casting
+        if (!subscriptionData.data) return prev as GetLeadsData;
+
+        // Server se aane wali ID ko extract karein
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const deletedData = (subscriptionData.data as any).leadDeleted;
+
+        // Agar server object bhej raha hai { _id: "..." } ya sirf string "..."
+        const idToCompare =
+          typeof deletedData === "object" ? deletedData._id : deletedData;
+
+        // 2. Safety check for leads array
+        if (!prev || !prev.leads) return { leads: [] } as GetLeadsData;
+
+        // 3. Filter logic with final Type Casting
+        return {
+          ...prev,
+          leads: prev.leads.filter((lead) => lead?._id !== idToCompare),
+        } as GetLeadsData;
+      },
+      onError: (err) => console.error("Delete Subscription Error:", err),
+    });
+
+    return () => {
+      unsubAdded();
+      unsubUpdate();
+      unsubDeleted();
+    };
+  }, [subscribeToMore]);
+
+  // --- 2. DERIVED STATES (No more extra UseEffects for sync) ---
+  const { activeLeads, historyLeads, totalValue } = useMemo(() => {
+    const leads = data?.leads || [];
+    const active = leads.filter((l) =>
+      ["NEW", "QUALIFIED", "PROPOSAL_SENT", "MEETING_BOOKED"].includes(l.status)
+    );
+    const history = leads.filter(
+      (l) =>
+        !["NEW", "QUALIFIED", "PROPOSAL_SENT", "MEETING_BOOKED"].includes(
+          l.status
+        )
+    );
+    const total = leads.reduce((acc, curr) => acc + (curr.budget || 0), 0);
+    return { activeLeads: active, historyLeads: history, totalValue: total };
+  }, [data]);
+
+  // --- 3. MUTATIONS ---
   const [updateStatus] = useMutation(UPDATE_STATUS_MUTATION);
   const [deleteLead] = useMutation(DELETE_LEAD);
   const [sendProposal] = useMutation(SEND_PROPOSAL_MUTATION);
+
+  // --- 4. UI STATES ---
   const [tabValue, setTabValue] = useState(0);
-  const [activeLeads, setActiveLeads] = useState<Lead[]>([]);
-  const [historyLeads, setHistoryLeads] = useState<Lead[]>([]);
   const [proposalLoading, setProposalLoading] = useState<string | null>(null);
   const [toast, setToast] = useState<{
     open: boolean;
     msg: string;
     type: "success" | "error";
-  }>({ open: false, msg: "", type: "success" });
+  }>({
+    open: false,
+    msg: "",
+    type: "success",
+  });
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [menuLead, setMenuLead] = useState<Lead | null>(null);
 
-  // Stats Logic
-  const totalValue =
-    data?.leads.reduce((acc, curr) => acc + curr.budget, 0) || 0;
-  const activeCount = activeLeads.length;
-
-  // Chart Data (Mock + Real Count Mix)
-  const chartData = [
-    { name: "Mon", leads: 2 },
-    { name: "Tue", leads: 4 },
-    { name: "Wed", leads: 1 },
-    { name: "Thu", leads: 5 },
-    { name: "Fri", leads: activeCount }, // Real active count
-    { name: "Sat", leads: 3 },
-    { name: "Sun", leads: 2 },
-  ];
-
-  useEffect(() => {
-    if (data?.leads) {
-      const active: Lead[] = [];
-      const history: Lead[] = [];
-      data.leads.forEach((lead: Lead) => {
-        if (
-          ["NEW", "QUALIFIED", "PROPOSAL_SENT", "MEETING_BOOKED"].includes(
-            lead.status
-          )
-        )
-          active.push(lead);
-        else history.push(lead);
-      });
-      setActiveLeads(active);
-      setHistoryLeads(history);
-    }
-  }, [data]);
-
+  // --- 5. HANDLERS ---
   const handleStatusChange = async (id: string, event: SelectChangeEvent) => {
-    const newStatus = event.target.value as string;
-    // ... (Same logic as before) ...
+    const newStatus = event.target.value;
     try {
       await updateStatus({ variables: { id, status: newStatus } });
       setToast({ open: true, msg: `Status updated`, type: "success" });
-      refetch();
-    } catch (err) {
+    } catch (err: unknown) {
       setToast({ open: true, msg: "Update failed", type: "error" });
     }
   };
@@ -144,6 +237,19 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeleteLead = async (id: string) => {
+    try {
+      await deleteLead({ variables: { id } });
+      setToast({
+        open: true,
+        msg: "Lead deleted successfully",
+        type: "success",
+      });
+    } catch (err) {
+      setToast({ open: true, msg: "Failed to delete lead", type: "error" });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "NEW":
@@ -157,41 +263,24 @@ export default function Dashboard() {
       case "REJECTED":
         return { color: "#dc2626", bg: "#fef2f2", label: "Rejected" };
       case "MEETING_BOOKED":
-        return { color: "#464646ff", bg: "#fef2f2", label: "Rejected" };
+        return { color: "#464646ff", bg: "#fef2f2", label: "Meeting Booked" };
       default:
         return { color: "grey", bg: "#f3f4f6", label: status };
     }
   };
 
-  const STATUS_OPTIONS = [
-    "NEW",
-    "QUALIFIED",
-    "WON",
-    "PROPOSAL_SENT",
-    "REJECTED",
-    "MEETING_BOOKED",
+  const chartData = [
+    { name: "Mon", leads: 2 },
+    { name: "Tue", leads: 4 },
+    { name: "Wed", leads: 1 },
+    { name: "Thu", leads: 5 },
+    { name: "Fri", leads: activeLeads.length },
+    { name: "Sat", leads: 3 },
+    { name: "Sun", leads: 2 },
   ];
-  const Service_Type = ["Web Dev", "App Dev", "AI Automation"];
 
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleDeleteLead = async (id: string) => {
-    try {
-      await deleteLead({ variables: { id } });
-      refetch();
-      setToast({
-        open: true,
-        msg: "Lead deleted successfully",
-        type: "success",
-      });
-      setSelectedLead(null);
-    } catch (err) {
-      setToast({ open: true, msg: "Failed to delete lead", type: "error" });
-      setSelectedLead(null);
-    }
-  };
-  const [menuLead, setMenuLead] = useState<Lead | null>(null);
   if (loading) return <LinearProgress />;
+
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", pb: 8 }}>
       <CssBaseline />
@@ -205,9 +294,7 @@ export default function Dashboard() {
         </Alert>
       </Snackbar>
 
-      {/* ✅ CONTAINER: Ye content ko center me rakhega aur side me chipakne se rokega */}
       <Container maxWidth="xl" sx={{ pt: 4 }}>
-        {/* Header */}
         <Box
           mb={4}
           display="flex"
@@ -225,10 +312,8 @@ export default function Dashboard() {
           <Avatar sx={{ bgcolor: "#4f46e5" }}>A</Avatar>
         </Box>
 
-        {/* --- ANALYTICS SECTION --- */}
         <Grid container spacing={3} mb={4}>
-          {/* Stat Card 1: Total Revenue */}
-          <Grid size={{ xs: 12, md: 4 }}>
+          <Grid size={{ xs: 12, md: 6 }}>
             <Paper
               elevation={0}
               sx={{
@@ -262,7 +347,6 @@ export default function Dashboard() {
             </Paper>
           </Grid>
 
-          {/* Stat Card 2: Active Leads */}
           <Grid size={{ xs: 12, md: 3 }}>
             <Paper
               elevation={0}
@@ -284,7 +368,7 @@ export default function Dashboard() {
                 <Typography variant="subtitle2">Active Leads</Typography>
               </Box>
               <Typography variant="h3" fontWeight="bold" color="#1e293b">
-                {activeCount}
+                {activeLeads.length}
               </Typography>
               <Typography variant="caption" color="textSecondary">
                 Potential clients currently in pipeline
@@ -292,7 +376,6 @@ export default function Dashboard() {
             </Paper>
           </Grid>
 
-          {/* Chart: Weekly Trend */}
           <Grid size={{ xs: 12, md: 5 }}>
             <Paper
               elevation={0}
@@ -359,7 +442,6 @@ export default function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* --- TABS & TABLE --- */}
         <Paper
           elevation={0}
           sx={{
@@ -464,7 +546,6 @@ export default function Dashboard() {
                         </Box>
                       </Box>
                     </TableCell>
-
                     <TableCell>
                       <Chip
                         label={lead.serviceType}
@@ -472,13 +553,11 @@ export default function Dashboard() {
                         sx={{ bgcolor: "#f1f5f9", fontWeight: 500 }}
                       />
                     </TableCell>
-
                     <TableCell>
                       <Typography fontWeight="bold" color="#475569">
                         ₹{lead.budget.toLocaleString()}
                       </Typography>
                     </TableCell>
-
                     <TableCell>
                       {tabValue === 0 ? (
                         <FormControl
@@ -496,36 +575,16 @@ export default function Dashboard() {
                               color: getStatusColor(lead.status).color,
                             }}
                           >
-                            <MenuItem value="NEW" sx={{ color: "#6366f1" }}>
-                              New Inquiry
-                            </MenuItem>
-                            <MenuItem
-                              value="QUALIFIED"
-                              sx={{ color: "#d97706" }}
-                            >
-                              Qualified
-                            </MenuItem>
-                            <MenuItem
-                              value="PROPOSAL_SENT"
-                              sx={{ color: "#ff05deff" }}
-                            >
+                            <MenuItem value="NEW">New Inquiry</MenuItem>
+                            <MenuItem value="QUALIFIED">Qualified</MenuItem>
+                            <MenuItem value="PROPOSAL_SENT">
                               Proposal Sent
                             </MenuItem>
-                            <MenuItem
-                              value="MEETING_BOOKED"
-                              sx={{ color: "#464646ff" }}
-                            >
+                            <MenuItem value="MEETING_BOOKED">
                               Meeting Booked
                             </MenuItem>
-                            <MenuItem value="WON" sx={{ color: "#059669" }}>
-                              Mark Won
-                            </MenuItem>
-                            <MenuItem
-                              value="REJECTED"
-                              sx={{ color: "#dc2626" }}
-                            >
-                              Mark Lost
-                            </MenuItem>
+                            <MenuItem value="WON">Mark Won</MenuItem>
+                            <MenuItem value="REJECTED">Mark Lost</MenuItem>
                           </Select>
                         </FormControl>
                       ) : (
@@ -540,7 +599,6 @@ export default function Dashboard() {
                         />
                       )}
                     </TableCell>
-
                     <TableCell align="right">
                       <Box display="flex" justifyContent="flex-end" gap={1}>
                         <IconButton
@@ -552,64 +610,6 @@ export default function Dashboard() {
                         >
                           <MoreVert fontSize="small" />
                         </IconButton>
-
-                        <Menu
-                          anchorEl={anchorEl}
-                          open={Boolean(anchorEl)}
-                          onClose={() => {
-                            setAnchorEl(null);
-                            setMenuLead(null);
-                          }}
-                        >
-                          <MenuItem
-                            onClick={(e) => {
-                              if (!menuLead) return;
-                              handleSendProposal(e, menuLead._id);
-                              setAnchorEl(null);
-                            }}
-                          >
-                            {proposalLoading === menuLead?._id ? (
-                              <CircularProgress size={16} />
-                            ) : (
-                              <PictureAsPdf
-                                fontSize="small"
-                                sx={{
-                                  color: "#ef4444",
-                                  bgcolor: "#fef2f2",
-                                  "&:hover": { bgcolor: "#fee2e2" },
-                                }}
-                              />
-                            )}
-                          </MenuItem>
-                          <MenuItem
-                            onClick={(e) => {
-                              if (!menuLead) return;
-                              setSelectedLead(menuLead);
-                              setAnchorEl(null);
-                            }}
-                            sx={{
-                              color: "#6366f1",
-                              bgcolor: "#eef2ff",
-                              "&:hover": { bgcolor: "#e0e7ff" },
-                            }}
-                          >
-                            <Edit fontSize="small" />
-                          </MenuItem>
-                          <MenuItem
-                            onClick={(e) => {
-                              if (!menuLead) return;
-                              handleDeleteLead(menuLead._id);
-                              setAnchorEl(null);
-                            }}
-                            sx={{
-                              color: "#ff0000ff",
-                              bgcolor: "#eef2ff",
-                              "&:hover": { bgcolor: "#e0e7ff" },
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </MenuItem>
-                        </Menu>
                       </Box>
                     </TableCell>
                   </TableRow>
@@ -619,11 +619,52 @@ export default function Dashboard() {
           </Table>
         </TableContainer>
       </Container>
+
+      {/* Action Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => {
+          setAnchorEl(null);
+          setMenuLead(null);
+        }}
+      >
+        <MenuItem
+          onClick={(e) => menuLead && handleSendProposal(e, menuLead._id)}
+        >
+          {proposalLoading === menuLead?._id ? (
+            <CircularProgress size={16} />
+          ) : (
+            <PictureAsPdf fontSize="small" sx={{ mr: 1, color: "#ef4444" }} />
+          )}{" "}
+          Send Proposal
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setSelectedLead(menuLead);
+            setAnchorEl(null);
+          }}
+        >
+          <Edit fontSize="small" sx={{ mr: 1, color: "#6366f1" }} /> Edit Lead
+        </MenuItem>
+        <MenuItem onClick={() => menuLead && handleDeleteLead(menuLead._id)}>
+          <Delete fontSize="small" sx={{ mr: 1, color: "#ff0000" }} /> Delete
+          Lead
+        </MenuItem>
+      </Menu>
+
       <EditLeadModal
         selectedLead={selectedLead}
         setSelectedLead={setSelectedLead}
-        STATUS_OPTIONS={STATUS_OPTIONS}
-        Service_Type={Service_Type}
+        STATUS_OPTIONS={[
+          "NEW",
+          "QUALIFIED",
+          "WON",
+          "PROPOSAL_SENT",
+          "REJECTED",
+          "MEETING_BOOKED",
+        ]}
+        Service_Type={["Web Dev", "App Dev", "AI Automation"]}
       />
     </Box>
   );

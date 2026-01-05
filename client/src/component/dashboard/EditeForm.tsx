@@ -55,6 +55,7 @@ const EditeForm: React.FC<EditFormProps> = ({
 
   useEffect(() => {
     if (selectedLead) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         name: selectedLead.name ?? "",
         email: selectedLead.email ?? "",

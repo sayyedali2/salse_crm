@@ -1,59 +1,57 @@
 "use client";
 
-import { ApolloLink, HttpLink } from "@apollo/client";
-import { setContext } from "@apollo/client/link/context"; // ✅ Import this
+import { ApolloLink, HttpLink, split } from "@apollo/client";
 import {
   ApolloNextAppProvider,
   NextSSRApolloClient,
   NextSSRInMemoryCache,
   SSRMultipartLink,
 } from "@apollo/experimental-nextjs-app-support/ssr";
+import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
+import { createClient } from "graphql-ws";
+import { getMainDefinition } from "@apollo/client/utilities";
 
-// Backend URL
-const GRAPHQL_ENDPOINT = "https://salsecrm-production.up.railway.app/graphql";
-// https://sales-pilot-api.onrender.com/graphql
-// http://localhost:3001/graphql
-// https://salsecrm-production.up.railway.app/graphql
+const GRAPHQL_ENDPOINT = "http://localhost:3001/graphql";
+const WEBSOCKET_ENDPOINT = "ws://localhost:3001/graphql";
+
 function makeClient() {
-  // 1. HTTP Link
-  const httpLink = new HttpLink({
-    uri: GRAPHQL_ENDPOINT,
-  });
+  // 1. Normal rasta (HTTP) - Queries ke liye
+  const httpLink = new HttpLink({ uri: GRAPHQL_ENDPOINT });
 
-  // 2. Auth Link (Token Injector)
-  // Ye har request se pehle chalega aur LocalStorage se token nikalega
-  const authLink = setContext((_, { headers }) => {
-    // Check karein ki hum Browser me hain ya nahi (Server pe localStorage nahi hota)
-    if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
-      return {
-        headers: {
-          ...headers,
-          authorization: token ? `Bearer ${token}` : "",
-        },
-      };
-    }
-    return { headers };
-  });
+  let link: ApolloLink;
 
-  // 3. Client Create with Link Chaining
+  // Next.js check karta hai: Kya hum server par hain?
+  if (typeof window === "undefined") {
+    link = ApolloLink.from([
+      new SSRMultipartLink({ stripDefer: true }),
+      httpLink, // <--- Ye zaroori hai server par data dikhane ke liye
+    ]);
+  } else {
+    // 2. Live rasta (WebSocket) - Subscriptions ke liye
+    const wsLink = new GraphQLWsLink(
+      createClient({
+        url: WEBSOCKET_ENDPOINT,
+      })
+    );
+
+    // 3. Traffic Policeman (Split)
+    // Agar subscription hai to wsLink use karo, nahi to httpLink
+    link = split(
+      ({ query }) => {
+        const definition = getMainDefinition(query);
+        return (
+          definition.kind === "OperationDefinition" &&
+          definition.operation === "subscription"
+        );
+      },
+      wsLink,   // Subscription ke liye path
+      httpLink  // Baaki sab ke liye path (Query/Mutation)
+    );
+  }
+
   return new NextSSRApolloClient({
     cache: new NextSSRInMemoryCache(),
-    link:
-      typeof window === "undefined"
-        ? ApolloLink.from([
-            // Server Side
-            new SSRMultipartLink({
-              stripDefer: true,
-            }),
-            authLink, // Server pe token usually null hoga (unless cookies use karein), but link chain me rakhna safe hai
-            httpLink,
-          ])
-        : ApolloLink.from([
-            // Client Side
-            authLink, // ✅ Pehle Auth Link chalega
-            httpLink, // ✅ Fir HTTP Request jayegi
-          ]),
+    link: link,
   });
 }
 
