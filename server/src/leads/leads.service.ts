@@ -3,7 +3,7 @@ import { Lead, LeadDocument } from './schemas/lead.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateLeadInput } from './dto/create-lead.input';
-import { MailService } from '../mail/mail.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import PDFDocument = require('pdfkit');
 import { UpdateLeadInput } from './dto/update-lead';

@@ -4,7 +4,7 @@ import { BookingsResolver } from './bookings.resolver';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Booking, BookingSchema } from './schemas/booking.schema';
 import { LeadsModule } from '../leads/leads.module'; // ✅ Import
-import { MailModule } from '../mail/mail.module'; // ✅ Import
+import { MailModule } from '../organization/mail/mail.module'; // ✅ Import
 
 @Module({
   imports: [

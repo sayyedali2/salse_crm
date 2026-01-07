@@ -9,10 +9,11 @@ import { ScheduleModule } from '@nestjs/schedule';
 // Modules
 import { PubSubModule } from './common/pubsub.module';
 import { LeadsModule } from './leads/leads.module';
-import { MailModule } from './mail/mail.module';
-import { BookingsModule } from './bookings/bookings.module';
+import { MailModule } from 'src/services/mail/mail.module';
+import { BookingsModule } from 'src/services/bookings/bookings.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { OrganizationModule } from './organization/organization.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthModule } from './auth/auth.module';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
       introspection: true,
+      context: ({ req, res }) => ({ req, res }),
       subscriptions: {
         // Next.js ke client (graphql-ws) ke liye ye zaroori hai
         'graphql-ws': {
@@ -58,6 +60,7 @@ import { AuthModule } from './auth/auth.module';
     BookingsModule,
     UsersModule,
     AuthModule,
+    OrganizationModule,
   ],
   // Note: Providers yahan khali hain kyunki PubSub 'PubSubModule' se aa raha hai
   providers: [],

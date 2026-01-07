@@ -147,4 +147,55 @@ export class MailService {
       handleSendGridError(error);
     }
   }
+
+  async sendInviteEmail(
+    to: string,
+    name: string,
+    token: string, // Invite Token yahan aayega
+  ): Promise<void> {
+    
+    // 1. Link Generate karo (Env se Frontend URL uthao)
+    // Example Link: http://localhost:3000/setup-account?token=abc123xyz
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const actionLink = `${frontendUrl}/setup-account?token=${token}`;
+
+    try {
+      await sgMail.send({
+        to,
+        from: process.env.MAIL_FROM!,
+        subject: 'Welcome to SalesPilot - Setup your Account 🚀',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Welcome to SalesPilot!</h2>
+            
+            <p>Hi ${name},</p>
+            
+            <p>You have been invited to join the <strong>SalesPilot</strong> workspace by your administrator.</p>
+            
+            <p>To get started, please click the button below to set your password and activate your account:</p>
+            
+            <div style="margin: 30px 0;">
+              <a href="${actionLink}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Setup My Account
+              </a>
+            </div>
+
+            <p style="color: #555;">Or copy-paste this link in your browser:</p>
+            <p><a href="${actionLink}" style="color: #007bff;">${actionLink}</a></p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            
+            <p style="color: #999; font-size: 12px;">This link is valid for 24 hours. If you didn't ask for this invite, please ignore this email.</p>
+            
+            <p>Regards,<br/><strong>SalesPilot Team</strong></p>
+          </div>
+        `,
+      });
+
+      console.log(`Invite email sent to ${to}`);
+    } catch (error: unknown) {
+      // Tumhara existing error handler reuse kar rahe hain
+      handleSendGridError(error);
+    }
+}
 }
