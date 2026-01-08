@@ -9,10 +9,18 @@ import { ScheduleModule } from '@nestjs/schedule';
 // Modules
 import { PubSubModule } from './common/pubsub.module';
 import { LeadsModule } from './leads/leads.module';
-import { MailModule } from './mail/mail.module';
-import { BookingsModule } from './bookings/bookings.module';
+import { MailModule } from 'src/services/mail/mail.module';
+import { BookingsModule } from 'src/services/bookings/bookings.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { OrganizationModule } from './organization/organization.module';
+import { RolesModule } from './roles/roles.module';
+import { RoleService } from './role/role.service';
+import { RolesModule } from './roles/roles.module';
+import { RolesResolver } from './roles/roles.resolver';
+import { RoleResolver } from './role/role.resolver';
+import { RolService } from './rol/rol.service';
+import { RoleService } from './role/role.service';
 
 @Module({
   imports: [
@@ -39,6 +47,7 @@ import { AuthModule } from './auth/auth.module';
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: true,
       introspection: true,
+      context: ({ req, res }) => ({ req, res }),
       subscriptions: {
         // Next.js ke client (graphql-ws) ke liye ye zaroori hai
         'graphql-ws': {
@@ -58,8 +67,10 @@ import { AuthModule } from './auth/auth.module';
     BookingsModule,
     UsersModule,
     AuthModule,
+    OrganizationModule,
+    RolesModule,
   ],
   // Note: Providers yahan khali hain kyunki PubSub 'PubSubModule' se aa raha hai
-  providers: [],
+  providers: [RoleService, RolService, RoleResolver, RolesResolver],
 })
 export class AppModule {}

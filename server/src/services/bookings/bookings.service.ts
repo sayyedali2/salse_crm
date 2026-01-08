@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { Booking, BookingDocument } from './schemas/booking.schema';
 import { CreateBookingInput } from './dto/create-booking.input';
 import { LeadsService } from '../leads/leads.service'; // Lead status update karne ke liye
-import { MailService } from '../mail/mail.service'; // Email ke liye
+import { MailService } from '../organization/mail/mail.service'; // Email ke liye
 
 @Injectable()
 export class BookingsService {

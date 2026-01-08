@@ -2,7 +2,7 @@ import { Resolver, Query, Mutation, Args, Subscription } from '@nestjs/graphql';
 import { LeadsService } from './leads.service';
 import { CreateLeadInput } from './dto/create-lead.input';
 import { Lead } from './schemas/lead.schema';
-import { MailService } from '../mail/mail.service';
+import { MailService } from "src/services/mail/mail.service";
 import { UpdateLeadInput } from './dto/update-lead';
 import { globalPubSub } from '../pubsub-instance';
 // ✅ Custom Interface jo TS error ko khatam karega

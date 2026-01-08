@@ -3,7 +3,7 @@ import { LeadsResolver } from './leads.resolver';
 import { LeadsService } from './leads.service';
 import { Lead, LeadSchema } from './schemas/lead.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MailModule } from 'src/mail/mail.module';
+import { MailModule } from 'src/services/mail/mail.module';
 import { PubSubModule } from 'src/common/pubsub.module';
 
 @Module({

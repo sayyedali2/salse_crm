@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 import { ObjectType, Field, Int, ID } from '@nestjs/graphql';
 
 export type LeadDocument = Lead & Document;
@@ -35,6 +35,17 @@ export class Lead {
   @Prop({ required: true })
   phone: string;
 
+  @Field(() => ID)
+  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true, index: true })
+  organizationId: Types.ObjectId;
+
+  @Field(() => ID)
+  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  assignedTo: Types.ObjectId;
+
+  @Prop({ default: 'Website' })
+  source: string; // 'Website', 'Excel', 'Email', 'Manual'
+
   @Field(() => Int)
   @Prop({ required: true })
   budget: number; // Logic ke liye zaroori hai
@@ -42,6 +53,12 @@ export class Lead {
   @Field()
   @Prop()
   serviceType: string;
+
+  @Prop()
+  aiSummary?: string;
+
+  @Prop()
+  qualityScore?: number;
 
   @Field()
   @Prop({
@@ -66,3 +83,7 @@ export class Lead {
 }
 
 export const LeadSchema = SchemaFactory.createForClass(Lead);
+
+
+LeadSchema.index({ organizationId: 1, status: 1 }); // Pipeline view ke liye fast
+LeadSchema.index({ assignedTo: 1 }); // "My Leads" view ke liye fast
