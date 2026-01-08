@@ -1,7 +1,7 @@
 import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { SchemaFactory, Schema, Prop } from '@nestjs/mongoose';
 
-export type OrganizationDocument = Organizaiton & Document;
+export type OrganizationType = Organizaiton & Document;
 
 @ObjectType()
 @Schema({ timestamps: true })

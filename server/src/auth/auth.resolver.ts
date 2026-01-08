@@ -12,8 +12,10 @@ import { Response } from 'express';
 import { SetupAccountInput } from './dto/setup-account.dto';
 import { LoginInput } from './dto/loginInput.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { UseGuards } from '@nestjs/common';
+import { ForbiddenException, UseGuards } from '@nestjs/common';
 import { COOKIE_OPTIONS } from 'src/common/constants/cookieOptions';
+import { ForgatPasswordInput } from './dto/forgatPasswordInput';
+import { ResetPasswordInput } from './dto/resetPasswordInput';
 
 // GraphQL Response Type (Token)
 @ObjectType()
@@ -91,5 +93,38 @@ export class AuthResolver {
     res.clearCookie('refreshToken', COOKIE_OPTIONS);
 
     return true;
+  }
+
+  @Mutation(()=> UserType)
+  async UpdateExpireAccessToken(
+    @Context() context: { req: any, res: Response},
+  ){
+    const req = context.req;
+    const res = context.res;
+    const userID = req.user._id;
+    const orgID = req.user.organizationId;
+    const oldRefreshToken = req.cookies['refreshToken'];
+    if (!oldRefreshToken) throw new ForbiddenException('No token found');
+    const { refreshToken, accessToken, user } = await this.authService.UpdateExpireAccessToken(userID, orgID, oldRefreshToken);
+    res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+    res.cookie('accessToken', accessToken, COOKIE_OPTIONS);
+    return user;
+
+  }
+
+  @Mutation(()=> String)
+  async forgatePassword(
+    @Args('input') input:ForgatPasswordInput,
+  ){
+    const res = await this.authService.forgotPassword(input);
+    return res;
+  }
+
+  @Mutation(()=> String)
+  async resetPassword(
+    @Args('input') input:ResetPasswordInput,
+  ){
+    const res = await this.authService.resetPassword(input);
+    return res;
   }
 }

@@ -1,6 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Types } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 export enum UserStatus {
@@ -41,7 +41,7 @@ export class User {
   @Field()
   @Prop({ select: false })
   refreshToken?: string;
-  
+
   @Field()
   @Prop({ default: UserStatus.ACTIVE, enum: UserStatus })
   status: string;
@@ -51,8 +51,16 @@ export class User {
   phone: string;
 
   @Field()
-  @Prop({default: null})
-  inviteToken?: string |null;
+  @Prop({ default: null })
+  inviteToken?: string | null;
+
+  @Field()
+  @Prop({ default: null })
+  ExpiryTempToken?: Date | null;
+
+  @Field()
+  @Prop({ default: null })
+  TempToken?: string | null;
 
   @Field()
   @Prop()

@@ -198,4 +198,57 @@ export class MailService {
       handleSendGridError(error);
     }
 }
+
+async sendPasswordResetEmail(
+    to: string,
+    name: string,
+    token: string, // Reset Token yahan aayega
+): Promise<void> {
+
+    // 1. Link Generate (Frontend route 'reset-password' hona chahiye)
+    // Example Link: http://localhost:3000/reset-password?token=xyz...
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const actionLink = `${frontendUrl}/reset-password?token=${token}`;
+
+    try {
+      await sgMail.send({
+        to,
+        from: process.env.MAIL_FROM!,
+        subject: 'Reset your SalesPilot Password 🔐', // Subject thoda urgent/secure lagna chahiye
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #333;">Reset Your Password</h2>
+            
+            <p>Hi ${name},</p>
+            
+            <p>We received a request to reset the password for your <strong>SalesPilot</strong> account.</p>
+            
+            <p>If you made this request, please click the button below to choose a new password:</p>
+            
+            <div style="margin: 30px 0;">
+              <a href="${actionLink}" style="background-color: #dc3545; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Reset Password
+              </a>
+            </div>
+
+            <p style="color: #555;">Or copy-paste this link in your browser:</p>
+            <p><a href="${actionLink}" style="color: #dc3545;">${actionLink}</a></p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            
+            <p style="color: #999; font-size: 12px;">
+              <strong>Security Notice:</strong> This link is valid for <strong>1 hour</strong> only. 
+              If you did not request a password reset, please ignore this email or contact support if you have concerns.
+            </p>
+            
+            <p>Regards,<br/><strong>SalesPilot Security Team</strong></p>
+          </div>
+        `,
+      });
+
+      console.log(`Password reset email sent to ${to}`);
+    } catch (error: unknown) {
+      handleSendGridError(error);
+    }
+}
 }

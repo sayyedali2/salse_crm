@@ -8,7 +8,7 @@ export type RolesDocument = Roles & Document;
 @Schema({timestamps: true})
 export class Roles {
   @Field()
-  _id: string;
+  _id: Types.ObjectId;
 
   @Prop({ required: true })
   @Field()
@@ -16,7 +16,7 @@ export class Roles {
 
   @Prop({ required: true })
   @Field()
-  permission: string[];
+  permissions: string[];
 
   @Prop({
     required: true,
@@ -26,6 +26,10 @@ export class Roles {
   })
   @Field()
   organizationID: Types.ObjectId;
+
+  @Prop({default:false})
+  @Field()
+  isSystemRole:Boolean;
 
   @Prop({ default: false })
   @Field()

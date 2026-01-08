@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model } from 'mongoose';
 import {
   Organizaiton,
-  OrganizationDocument,
+  OrganizationType,
 } from './schemas/organization.schema';
 import { CreateOrganizationInput } from 'src/auth/dto/createOrganizationInput.dto';
 
@@ -11,7 +11,7 @@ import { CreateOrganizationInput } from 'src/auth/dto/createOrganizationInput.dt
 export class OrganizationService {
   constructor(
     @InjectModel(Organizaiton.name)
-    private organizationModel: Model<OrganizationDocument>,
+    private organizationModel: Model<OrganizationType>,
   ) {}
 
   async createOrganization(

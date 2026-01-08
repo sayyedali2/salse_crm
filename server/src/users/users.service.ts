@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
 
@@ -8,6 +8,7 @@ import * as bcrypt from 'bcrypt'; // Password hash karne ke liye
 import { CreateAdminUserInput } from './dto/createAdminUserInput.dto';
 import { MailService } from 'src/services/mail/mail.service';
 import * as crypto from 'crypto';
+import { UpdateUserInput } from './dto/updateUserInput.dto';
 
 @Injectable()
 export class UsersService {
@@ -16,7 +17,7 @@ export class UsersService {
     private readonly mailService: MailService,
   ) {}
 
-  async findOne(filter: Partial<User>): Promise<UserDocument | undefined> {
+  async findOne(filter: any): Promise<UserDocument | undefined> {
     const user = await this.userModel.findOne(filter).exec();
     if (!user) {
       console.log('User not found');
@@ -93,5 +94,26 @@ export class UsersService {
       inviteToken: token,
       status: 'PENDING',
     });
+  }
+
+  async updateUser(input: UpdateUserInput, organizationId: string) {
+    const { _id, ...rest } = input;
+    const user = await this.userModel.findOneAndUpdate(
+      { _id, organizationId },
+      { $set: rest },
+      { new: true },
+    );
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async deleteUser(_id: string, organizationId: string) {
+    const user = await this.userModel.findOneAndDelete({ _id: new Types.ObjectId(_id), organizationId: new Types.ObjectId(organizationId) });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async findAllUsers(organizationId: string) {
+    return this.userModel.find({ organizationId: new Types.ObjectId(organizationId) });
   }
 }

@@ -14,6 +14,13 @@ import { BookingsModule } from 'src/services/bookings/bookings.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganizationModule } from './organization/organization.module';
+import { RolesModule } from './roles/roles.module';
+import { RoleService } from './role/role.service';
+import { RolesModule } from './roles/roles.module';
+import { RolesResolver } from './roles/roles.resolver';
+import { RoleResolver } from './role/role.resolver';
+import { RolService } from './rol/rol.service';
+import { RoleService } from './role/role.service';
 
 @Module({
   imports: [
@@ -61,8 +68,9 @@ import { OrganizationModule } from './organization/organization.module';
     UsersModule,
     AuthModule,
     OrganizationModule,
+    RolesModule,
   ],
   // Note: Providers yahan khali hain kyunki PubSub 'PubSubModule' se aa raha hai
-  providers: [],
+  providers: [RoleService, RolService, RoleResolver, RolesResolver],
 })
 export class AppModule {}

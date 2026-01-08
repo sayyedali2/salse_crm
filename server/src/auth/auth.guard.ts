@@ -26,7 +26,7 @@ export class AuthGuard implements CanActivate {
         return false;
       }
 
-      const user = await this.userModel.findOne({_id: new Types.ObjectId(decoded._id), organizationId: new Types.ObjectId(decoded.organizationId)}).lean();;
+      const user = await this.userModel.findOne({_id: new Types.ObjectId(decoded._id), organizationId: new Types.ObjectId(decoded.organizationId)}).populate('role').lean();
 
       if (!user || user.status !== 'Active') {
         return false;

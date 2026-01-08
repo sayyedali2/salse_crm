@@ -1,14 +1,22 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model } from 'mongoose';
 import { UserDocument, User } from 'src/users/schemas/userSchema';
+import { JwtService } from '@nestjs/jwt';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class TokensService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    private jwtService: JwtService,
+    private usersService: UsersService,
   ) {}
 
   generateRefreshToken(_id: Types.ObjectId, orgId: Types.ObjectId) {
@@ -43,24 +51,6 @@ export class TokensService {
     return accessToken;
   }
 
-
-  async updateRefreshToken(
-    _id: Types.ObjectId,
-    refreshToken: string,
-    organizationId: Types.ObjectId,
-    session?: ClientSession,
-  ) {
-    const result = await this.userModel.updateOne(
-      { _id, organizationId },
-      { $set: { refreshToken } },
-      session ?{ session }:undefined,
-    );
-
-    if (result.matchedCount === 0) {
-      throw new BadRequestException('User not found');
-    }
-  }
-
   async SaveRefreshToken(
     _id: Types.ObjectId,
     refreshToken: string,
@@ -70,7 +60,7 @@ export class TokensService {
     const result = await this.userModel.updateOne(
       { _id, organizationId },
       { $set: { refreshToken } },
-      session ?{ session }:undefined,
+      session ? { session } : undefined,
     );
 
     if (result.matchedCount === 0) {
@@ -78,11 +68,26 @@ export class TokensService {
     }
   }
 
-  async DeleteRefreshToken(_id:Types.ObjectId, organizationId:Types.ObjectId){
+  async DeleteRefreshToken(
+    _id: Types.ObjectId,
+    organizationId: Types.ObjectId,
+  ) {
     await this.userModel.updateOne(
       { _id, organizationId },
       { $set: { refreshToken: null } },
     );
     return true;
+  }
+
+  verifyAccessToken(token: string) {
+    return this.jwtService.verify(token, {
+      secret: process.env.ACCESS_TOKEN_SECRET,
+    });
+  }
+
+  verifyRefreshToken(token: string) {
+    return this.jwtService.verify(token, {
+      secret: process.env.REFRESH_TOKEN_SECRET,
+    });
   }
 }
