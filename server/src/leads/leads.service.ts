@@ -1,27 +1,84 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Inject,
+  forwardRef,
+  NotFoundException,
+} from '@nestjs/common';
 import { Lead, LeadDocument } from './schemas/lead.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { CreateLeadInput } from './dto/create-lead.input';
-import { MailService } from '../mail/mail.service';
+import { MailService } from 'src/services/mail/mail.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import PDFDocument = require('pdfkit');
 import { UpdateLeadInput } from './dto/update-lead';
+import * as XLSX from 'xlsx';
+import { OrganizationService } from 'src/organization/organization.service';
+import { decyptKey } from 'src/utils/encryption.utils';
+import { UsersService } from 'src/users/users.service';
+import { assign } from 'nodemailer/lib/shared';
+import { globalPubSub } from '../pubsub-instance';
+
+interface ExcelLead {
+  Name: string;
+  Email: string;
+  Phone: string;
+  Source: string;
+  Budget: string;
+  'Service Type': string;
+  Status: string;
+}
 
 @Injectable()
 export class LeadsService {
+  logger: any;
   constructor(
     @InjectModel(Lead.name) private leadModel: Model<LeadDocument>,
     private mailService: MailService,
+    @Inject(forwardRef(() => OrganizationService))
+    private organizationService: OrganizationService,
+    @Inject(forwardRef(() => UsersService)) private userService: UsersService,
   ) {}
-  async createLead(createLeadInput: CreateLeadInput): Promise<Lead> {
+
+  async createLead(
+    createLeadInput: CreateLeadInput,
+    organizationId: string,
+    userId?: string,
+  ): Promise<Lead> {
     const activeLead = await this.leadModel.findOne({
       email: createLeadInput.email,
       status: { $nin: ['WON', 'LOST', 'REJECTED'] },
+      organizationId: new Types.ObjectId(organizationId),
     });
+    const org = await this.organizationService.findOne({ _id: organizationId });
+    if (!org) throw new NotFoundException('organization not found');
+
+    // Check if email service is enabled and keys exist
+    let emailServiceStatus = org.emailServiceStatus;
+    let ApiKey = '';
+
+    if (emailServiceStatus && org.apiKey && org.iv) {
+      try {
+        ApiKey = decyptKey(org.apiKey, org.iv);
+      } catch (e) {
+        console.error('Error decrypting key:', e);
+        emailServiceStatus = false; // Disable if decryption fails
+      }
+    } else {
+      emailServiceStatus = false; // Disable if keys missing or status false
+    }
 
     let leadToSave: LeadDocument;
     let isNew = false;
+
+    // AUTO ASSIGNMENT LOGIC
+    if (!userId) {
+      const bestAgentId = await this.getBestAgent(organizationId);
+      if (bestAgentId) {
+        userId = bestAgentId;
+      }
+    }
 
     if (activeLead) {
       leadToSave = activeLead;
@@ -32,8 +89,19 @@ export class LeadsService {
         timestamp: new Date(),
       });
     } else {
-      leadToSave = new this.leadModel(createLeadInput);
+      leadToSave = new this.leadModel({
+        ...createLeadInput,
+        organizationId: new Types.ObjectId(organizationId),
+        assignedTo: userId ? new Types.ObjectId(userId) : null,
+      });
       isNew = true;
+      if (leadToSave.assignedTo) {
+        await this.userService.incrementLeadCount(organizationId, userId, 1);
+      }
+    }
+
+    if (!emailServiceStatus) {
+      return (await leadToSave.save()).populate('assignedTo');
     }
 
     if (createLeadInput.budget < 3000) {
@@ -43,7 +111,10 @@ export class LeadsService {
           event: 'Auto-Rejected: Budget too low (<3k)',
           timestamp: new Date(),
         });
-        this.mailService.sendRejectionEmail(leadToSave.email, leadToSave.name);
+        this.mailService.sendRejectionEmail(leadToSave.email, leadToSave.name, {
+          apiKey: ApiKey || '',
+          fromEmail: org.senderEmail || '',
+        });
       }
     } else if (createLeadInput.budget > 50000) {
       // Qualification Logic...
@@ -57,6 +128,10 @@ export class LeadsService {
           leadToSave.email,
           leadToSave.name,
           leadToSave._id.toString(),
+          {
+            apiKey: ApiKey || '',
+            fromEmail: org.senderEmail || '',
+          },
         );
       }
     } else {
@@ -71,6 +146,10 @@ export class LeadsService {
           this.mailService.sendAcknowledgementEmail(
             leadToSave.email,
             leadToSave.name,
+            {
+              apiKey: ApiKey || '',
+              fromEmail: org.senderEmail || '',
+            },
           );
           leadToSave.timeline.push({
             event: 'System: Acknowledgement Email Sent',
@@ -90,39 +169,117 @@ export class LeadsService {
       });
     }
 
-    return leadToSave.save();
-  }
-  async getAllLeads(): Promise<Lead[]> {
-    return this.leadModel.find().exec();
+    return (await leadToSave.save()).populate('assignedTo');
   }
 
-  async findOne(id: string): Promise<Lead> {
-    const lead = await this.leadModel.findById(id).exec();
+  async getAllLeads(organizationId: string, skip: number, take: number) {
+    const query = { organizationId: new Types.ObjectId(organizationId) };
+    const [items, totalCount] = await Promise.all([
+      this.leadModel
+        .find(query)
+        .populate('assignedTo')
+        .sort({ createdAt: 1 })
+        .skip(skip)
+        .limit(take)
+        .exec(),
+      this.leadModel.countDocuments(query).exec(), // Ye count batayega kitne total leads hain
+    ]);
+
+    return { items, totalCount };
+  }
+
+  async getLeadsByUser(
+    organizationId: string,
+    userID: string,
+    skip: number,
+    take: number,
+  ): Promise<{ items: Lead[]; totalCount: number }> {
+    const query = {
+      organizationId: new Types.ObjectId(organizationId),
+      assignedTo: new Types.ObjectId(userID) as any,
+    };
+
+    const [items, totalCount] = await Promise.all([
+      this.leadModel
+        .find(query)
+        .populate('assignedTo')
+        .sort({ createdAt: 1 }) // Sorted for consistency
+        .skip(skip)
+        .limit(take)
+        .exec(),
+      this.leadModel.countDocuments(query).exec(),
+    ]);
+
+    return { items, totalCount };
+  }
+
+  async findOne(filter: any, organizationId: string): Promise<Lead> {
+    const lead = await this.leadModel
+      .findOne({
+        ...filter,
+        organizationId: new Types.ObjectId(organizationId),
+      })
+      .populate('assignedTo')
+      .exec();
     if (!lead) throw new Error('Lead not found');
     return lead;
   }
-  '694bb4f777bd73bf0785678d';
-  async updateStatus(id: string, status: string): Promise<Lead> {
-    const lead = await this.leadModel.findById(id);
+
+  async updateStatus(
+    id: string,
+    status: string,
+    organizationId: string,
+  ): Promise<Lead> {
+    const lead = await this.leadModel.findOne({
+      _id: id,
+      organizationId: new Types.ObjectId(organizationId),
+    });
     if (!lead) throw new Error('Lead not found');
+    const oldStatus = lead.status;
+    const closingStatuses = ['WON', 'LOST', 'REJECTED'];
 
+    // LOGIC: Agar lead pehle "Active" thi aur ab "Close" ho rahi hai
+    const wasActive = !closingStatuses.includes(oldStatus);
+    const isClosing = closingStatuses.includes(status);
+
+    if (wasActive && isClosing && lead.assignedTo) {
+      // Agent free ho gaya! Count -1 karo
+      await this.userService.incrementLeadCount(
+        organizationId,
+        lead.assignedTo.toString(),
+        -1,
+      );
+    }
+    // Reverse Logic: Agar koi galti se WON lead ko wapas NEW kar de (Rare case)
+    else if (!wasActive && !isClosing && lead.assignedTo) {
+      await this.userService.incrementLeadCount(
+        organizationId,
+        lead.assignedTo.toString(),
+        1,
+      );
+    }
+
+    // 2. Status update aur timeline entry
     lead.status = status;
-
-    // Add log to timeline
     lead.timeline.push({
-      event: `Status changed manually to ${status}`,
+      event: `Status changed from ${oldStatus} to ${status}`,
       timestamp: new Date(),
     });
 
-    return lead.save();
+    return (await lead.save()).populate('assignedTo');
   }
 
-  async updateLead(id: string, data: UpdateLeadInput) {
-    const updatedLead = await this.leadModel.findByIdAndUpdate(
-      id,
-      data,
-      { new: true }, // updated document return karega
-    );
+  async updateLead(id: string, data: UpdateLeadInput, organizationId: string) {
+    const updatedLead = await this.leadModel
+      .findOneAndUpdate(
+        {
+          _id: id,
+          organizationId: new Types.ObjectId(organizationId),
+        },
+        data,
+        { new: true }, // updated document return karega
+      )
+      .populate('assignedTo');
 
     if (!updatedLead) {
       throw new BadRequestException('Lead not found!!');
@@ -131,12 +288,15 @@ export class LeadsService {
     return updatedLead;
   }
 
-  async deleteLead(id: string): Promise<boolean> {
+  async deleteLead(id: string, organizationId: string): Promise<boolean> {
     if (!Types.ObjectId.isValid(id)) {
       throw new Error('Invalid ID');
     }
 
-    const deletedLead = await this.leadModel.findByIdAndDelete(id);
+    const deletedLead = await this.leadModel.findOneAndDelete({
+      _id: id,
+      organizationId: new Types.ObjectId(organizationId),
+    });
     if (!deletedLead) {
       throw new Error('Lead not found');
     }
@@ -188,8 +348,14 @@ export class LeadsService {
 
   // ... inside LeadsService class
 
-  async generateProposalPDF(leadId: string): Promise<Buffer> {
-    const lead = await this.leadModel.findById(leadId);
+  async generateProposalPDF(
+    leadId: string,
+    organizationId: string,
+  ): Promise<Buffer> {
+    const lead = await this.leadModel.findOne({
+      _id: leadId,
+      organizationId: new Types.ObjectId(organizationId),
+    });
     if (!lead) throw new Error('Lead not found');
 
     return new Promise((resolve) => {
@@ -272,5 +438,213 @@ export class LeadsService {
 
       doc.end();
     });
+  }
+
+  async importLeadsFromExcel(
+    fileBuffer: Buffer,
+    orgId: string,
+    userId: string, // Ye admin ki ID hai jo upload kar raha hai
+  ) {
+    const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+
+    const rowData: any[] = XLSX.utils.sheet_to_json(sheet);
+    if (!rowData.length) throw new BadRequestException('Excel file is empty');
+
+    // 1. Central Engine ko call karke assignment karwayi
+    // Note: Humein wahi data bhejna hai jisme 'Email' ho
+    const validRows = rowData.filter((row) => row['Email']);
+    const { assignedLeads, userLoadUpdates } = await this.handleBulkAssignment(
+      validRows,
+      orgId,
+    );
+
+    const now = new Date();
+
+    // 2. Leads ka final data taiyaar karein
+    const operations = assignedLeads.map((lead) => ({
+      updateOne: {
+        filter: {
+          email: lead['Email'].toString().toLowerCase().trim(),
+          organizationId: new Types.ObjectId(orgId),
+        },
+        update: {
+          $set: {
+            name: lead['Name'] || 'Unknown',
+            email: lead['Email'].toString().toLowerCase().trim(),
+            phone: lead['Phone'],
+            organizationId: new Types.ObjectId(orgId),
+            assignedTo: lead.assignedTo, // ENGINE WALI ID
+            source: lead['Source'] || 'Excel Import',
+            budget: lead['Budget'],
+            serviceType: lead['Service Type'],
+            status: lead['Status'] || 'New',
+            timeline: [{ event: 'System: Lead Imported', timestamp: now }],
+          },
+        },
+        upsert: true,
+      },
+    }));
+
+    try {
+      // 3. Leads ko Bulk Insert karein
+      const result = await this.leadModel.bulkWrite(operations);
+
+      // 4. Sabse Important: Users ka Workload Sync karein
+      // Sirf unhi users ko update karein jinhe leads mili hain
+      if (userLoadUpdates.size > 0) {
+        const userBulkOps = Array.from(userLoadUpdates).map(
+          ([agentId, count]) => ({
+            updateOne: {
+              filter: { _id: new Types.ObjectId(agentId) },
+              update: { $inc: { activeLeadsCount: count } },
+            },
+          }),
+        );
+
+        await this.userService.bulkWrite(userBulkOps);
+      }
+
+      // --- REAL-TIME UPDATE LOGIC ---
+      const emails = assignedLeads.map((l) =>
+        l['Email'].toString().toLowerCase().trim(),
+      );
+      console.log(`[Import] Emails to find: ${emails.length}`);
+
+      const updatedLeads = await this.leadModel
+        .find({
+          email: { $in: emails },
+          organizationId: new Types.ObjectId(orgId),
+        })
+        .populate('assignedTo');
+
+      console.log(`[Import] Found ${updatedLeads.length} leads to publish.`);
+
+      for (const lead of updatedLeads) {
+        const leadToPublish = JSON.parse(JSON.stringify(lead));
+        // Using 'leadAdded' ensures new leads appear in the list.
+        await globalPubSub.publish('leadAdded', { leadAdded: leadToPublish });
+        // console.log(`[Import] Published lead: ${lead.email}`);
+      }
+
+      return {
+        count: result.upsertedCount + result.modifiedCount,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Partial upload or database error',
+        count: (error.result?.nUpserted || 0) + (error.result?.nModified || 0),
+      };
+    }
+  }
+
+  async handleSingleAssignment(
+    leadId: string,
+    organizationId: string,
+    manualUserId: string,
+  ) {
+    // 1. User aur Lead dono ko ek saath fetch karein (Parallel processing for speed)
+    const [user, lead] = await Promise.all([
+      this.userService.findOne({ organizationId, _id: manualUserId }),
+      this.leadModel.findOne({ _id: leadId, organizationId }), // Org check yahan bhi zaroori hai safety ke liye
+    ]);
+
+    if (!user)
+      throw new NotFoundException('User not found in this organization');
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    const previousAgentId = lead.assignedTo?.toString();
+
+    // Agar lead usi bande ko dobara assign ho rahi hai, toh kuch mat karo
+    if (previousAgentId === manualUserId) return lead;
+
+    // 2. Assignment Update
+    lead.assignedTo = user._id as any;
+    await lead.save();
+
+    // 3. Workload Sync (Logic Layer)
+    // Purane bande ka -1 karo
+    if (previousAgentId) {
+      await this.userService.incrementLeadCount(
+        organizationId,
+        previousAgentId,
+        -1,
+      );
+    }
+
+    // Naye bande ka +1 karo
+    await this.userService.incrementLeadCount(organizationId, manualUserId, 1);
+
+    return lead;
+  }
+
+  async handleBulkAssignment(leadsData: any[], organizationId: string) {
+    // 1. Saare assignable agents ko ek hi baar fetch kiya (Performance!)
+    const agents = await this.userService.getAll({
+      organizationId,
+      isAssignable: true,
+      status: 'ACTIVE',
+    });
+
+    if (!agents.length) throw new Error('No assignable agents found');
+
+    // 2. Memory mein distribution track karne ke liye Map
+    const userLoadUpdates = new Map<string, number>();
+
+    const assignedLeads = leadsData.map((lead) => {
+      // Agents ko workload ke hisaab se sort karein
+      agents.sort((a, b) => {
+        const aCount =
+          typeof a.activeLeadsCount === 'number' ? a.activeLeadsCount : 0;
+        const bCount =
+          typeof b.activeLeadsCount === 'number' ? b.activeLeadsCount : 0;
+        return aCount - bCount;
+      });
+      const bestAgent: any = agents[0];
+
+      // Memory mein count update
+      bestAgent.activeLeadsCount =
+        (typeof bestAgent.activeLeadsCount === 'number'
+          ? bestAgent.activeLeadsCount
+          : 0) + 1;
+
+      // Track ki kis agent ko kitni leads mili (for Bulk Sync)
+      const currentCount = userLoadUpdates.get(bestAgent._id.toString()) || 0;
+      userLoadUpdates.set(bestAgent._id.toString(), currentCount + 1);
+
+      return {
+        ...lead,
+        assignedTo: bestAgent._id,
+        organizationId: organizationId,
+      };
+    });
+
+    return { assignedLeads, userLoadUpdates };
+  }
+
+  async getBestAgent(organizationId: string): Promise<string | null> {
+    try {
+      const agents = await this.userService.getAll({
+        organizationId,
+        isAssignable: true,
+        status: 'ACTIVE',
+      });
+
+      if (!agents || agents.length === 0) return null;
+
+      // Sort by activeLeadsCount (ascending) - Jiske paas kam leads hain usko pehle
+      agents.sort((a, b) => {
+        const countA = (a as any).activeLeadsCount || 0;
+        const countB = (b as any).activeLeadsCount || 0;
+        return countA - countB;
+      });
+
+      return agents[0]._id.toString();
+    } catch (error) {
+      console.error('Error finding best agent:', error);
+      return null;
+    }
   }
 }

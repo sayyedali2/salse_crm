@@ -5,14 +5,21 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
 
 // Modules
 import { PubSubModule } from './common/pubsub.module';
 import { LeadsModule } from './leads/leads.module';
-import { MailModule } from './mail/mail.module';
-import { BookingsModule } from './bookings/bookings.module';
+import { MailModule } from 'src/services/mail/mail.module';
+import { BookingsModule } from 'src/services/bookings/bookings.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { OrganizationModule } from './organization/organization.module';
+import { RolesModule } from './roles/roles.module';
+import { InquiryModule } from './inquiry/inquiry.module';
+
+// Guards
+import { PermissionGuard } from './common/decorator/permission/permission.gaurd';
 
 @Module({
   imports: [
@@ -36,9 +43,10 @@ import { AuthModule } from './auth/auth.module';
     // 4. GraphQL Setup with Subscriptions
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: join(process.cwd(), 'schema.gql'),
       playground: true,
       introspection: true,
+      context: ({ req, res }) => ({ req, res }),
       subscriptions: {
         // Next.js ke client (graphql-ws) ke liye ye zaroori hai
         'graphql-ws': {
@@ -58,8 +66,10 @@ import { AuthModule } from './auth/auth.module';
     BookingsModule,
     UsersModule,
     AuthModule,
+    OrganizationModule,
+    RolesModule,
+    InquiryModule,
   ],
-  // Note: Providers yahan khali hain kyunki PubSub 'PubSubModule' se aa raha hai
-  providers: [],
+  providers: [PermissionGuard],
 })
 export class AppModule {}

@@ -14,11 +14,15 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@hello-pangea/dnd": "^18.0.1",
+    "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.6",
     "@mui/material": "^7.3.6",
+    "@studio-freight/react-lenis": "^0.0.47",
     "framer-motion": "^12.23.26",
     "graphql": "^16.12.0",
     "graphql-ws": "^6.0.6",
+    "lodash": "^4.17.23",
+    "lottie-react": "^2.4.1",
     "next": "^15.0.3",
     "react": "^19.0.0-rc-66855b96-20241106",
     "react-dom": "^19.0.0-rc-66855b96-20241106",
@@ -27,6 +31,7 @@
     "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.23",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
