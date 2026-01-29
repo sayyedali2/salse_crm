@@ -11,8 +11,8 @@ import {createClient} from "graphql-ws";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 
-const GRAPHQL_ENDPOINT = "http://salsecrm-production.up.railway.app/graphql";
-const WEBSOCKET_ENDPOINT = "ws://salsecrm-production.up.railway.app/graphql";
+const GRAPHQL_ENDPOINT = "https://salsecrm-production.up.railway.app/graphql";
+const WEBSOCKET_ENDPOINT = "wss://salsecrm-production.up.railway.app/graphql";
 
 function makeClient() {
   const httpLink = new HttpLink({
