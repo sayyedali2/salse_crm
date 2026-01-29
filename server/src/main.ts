@@ -12,7 +12,7 @@ async function bootstrap() {
   app.use(cookieParser());
   // 👇 SABSE ZAROORI: CORS Enable karna
   app.enableCors({
-    origin: 'http://localhost:3000', // Iska matlab: "Sabko allow karo"
+    origin: 'https://salse-crm.vercel.app', // Iska matlab: "Sabko allow karo"
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
