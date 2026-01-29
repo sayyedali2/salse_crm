@@ -7,12 +7,14 @@ import {
   NextSSRApolloClient,
   NextSSRInMemoryCache,
 } from "@apollo/experimental-nextjs-app-support/ssr";
-import {createClient} from "graphql-ws";
+import { createClient } from "graphql-ws";
 import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 
-const GRAPHQL_ENDPOINT = "https://salsecrm-production.up.railway.app/graphql";
-const WEBSOCKET_ENDPOINT = "wss://salsecrm-production.up.railway.app/graphql";
+const GRAPHQL_ENDPOINT =
+  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:3001/graphql";
+const WEBSOCKET_ENDPOINT =
+  process.env.NEXT_PUBLIC_WEBSOCKET_ENDPOINT || "ws://localhost:3001/graphql";
 
 function makeClient() {
   const httpLink = new HttpLink({
@@ -35,31 +37,33 @@ function makeClient() {
     };
   });
 
-  const wsLink = typeof window !== "undefined"
-    ? new GraphQLWsLink(
-        createClient({
-          url: WEBSOCKET_ENDPOINT,
-          connectionParams: () => {
-            const token = localStorage.getItem("accessToken");
-            return { authorization: token ? `Bearer ${token}` : "" };
-          },
-        })
-      )
-    : null;
+  const wsLink =
+    typeof window !== "undefined"
+      ? new GraphQLWsLink(
+          createClient({
+            url: WEBSOCKET_ENDPOINT,
+            connectionParams: () => {
+              const token = localStorage.getItem("accessToken");
+              return { authorization: token ? `Bearer ${token}` : "" };
+            },
+          }),
+        )
+      : null;
 
-    const splitLink = typeof window !== "undefined" && wsLink
-    ? split(
-        ({ query }) => {
-          const definition = getMainDefinition(query);
-          return (
-            definition.kind === "OperationDefinition" &&
-            definition.operation === "subscription"
-          );
-        },
-        wsLink, // Agar subscription hai toh yahan bhejo
-        authLink.concat(httpLink) // Warna yahan
-      )
-    : authLink.concat(httpLink);
+  const splitLink =
+    typeof window !== "undefined" && wsLink
+      ? split(
+          ({ query }) => {
+            const definition = getMainDefinition(query);
+            return (
+              definition.kind === "OperationDefinition" &&
+              definition.operation === "subscription"
+            );
+          },
+          wsLink, // Agar subscription hai toh yahan bhejo
+          authLink.concat(httpLink), // Warna yahan
+        )
+      : authLink.concat(httpLink);
 
   return new NextSSRApolloClient({
     cache: new NextSSRInMemoryCache(),
