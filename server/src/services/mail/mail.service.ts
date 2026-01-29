@@ -1,5 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import sgMail from '@sendgrid/mail';
+import axios from 'axios';
+
+import { MailService as SendGridClient } from '@sendgrid/mail';
 
 function handleSendGridError(error: unknown): void {
   if (typeof error === 'object' && error !== null && 'response' in error) {
@@ -15,15 +23,39 @@ function handleSendGridError(error: unknown): void {
 
 @Injectable()
 export class MailService {
-  constructor() {
-    sgMail.setApiKey(process.env.SENDGRID_SMTP_PASS ?? '');
-  }
+  constructor(
+  ) {}
 
-  async sendRejectionEmail(to: string, name: string): Promise<void> {
+  private readonly crmApiKey = process.env.SENDGRID_SMTP_PASS;
+  private readonly crmFromEmail = process.env.MAIL_FROM;
+
+  async sendRejectionEmail(
+    to: string,
+    name: string,
+    companyConfig?: { apiKey: string; fromEmail: string },
+  ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
+
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Update regarding your project inquiry',
         html: `
           <p>Hi ${name},</p>
@@ -43,11 +75,29 @@ export class MailService {
     to: string,
     name: string,
     _id: string,
+    companyConfig?: { apiKey: string; fromEmail: string },
   ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Good News! Your Project is Qualified',
         html: `
           <p>Hi ${name},</p>
@@ -72,11 +122,29 @@ export class MailService {
     to: string,
     name: string,
     _id: string,
+    companyConfig?: { apiKey: string; fromEmail: string },
   ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Reminder: Let’s schedule your project discussion',
         html: `
           <p>Hi ${name},</p>
@@ -97,11 +165,32 @@ export class MailService {
     }
   }
 
-  async sendAcknowledgementEmail(to: string, name: string): Promise<void> {
+  async sendAcknowledgementEmail(
+    to: string,
+    name: string,
+    companyConfig?: { apiKey: string; fromEmail: string },
+  ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'We have received your project inquiry',
         html: `
           <p>Hi ${name},</p>
@@ -121,11 +210,29 @@ export class MailService {
     to: string,
     name: string,
     pdfBuffer: Buffer,
+    companyConfig?: { apiKey: string; fromEmail: string },
   ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Project Proposal - SalesPilot',
         html: `
           <p>Hi ${name},</p>
@@ -152,17 +259,34 @@ export class MailService {
     to: string,
     name: string,
     token: string, // Invite Token yahan aayega
-  ): Promise<void> {
-    
+    companyConfig?: { apiKey: string; fromEmail: string },
+  ): Promise<boolean> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     // 1. Link Generate karo (Env se Frontend URL uthao)
     // Example Link: http://localhost:3000/setup-account?token=abc123xyz
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
     const actionLink = `${frontendUrl}/setup-account?token=${token}`;
 
     try {
-      await sgMail.send({
+      await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Welcome to SalesPilot - Setup your Account 🚀',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -193,27 +317,46 @@ export class MailService {
       });
 
       console.log(`Invite email sent to ${to}`);
+      return true;
     } catch (error: unknown) {
       // Tumhara existing error handler reuse kar rahe hain
       handleSendGridError(error);
+      return false;
     }
-}
+  }
 
-async sendPasswordResetEmail(
+  async sendPasswordResetEmail(
     to: string,
     name: string,
-    token: string, // Reset Token yahan aayega
-): Promise<void> {
+    token: string, // Reset Token yahan aayega,
+    companyConfig?: { apiKey: string; fromEmail: string },
+  ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
 
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
     // 1. Link Generate (Frontend route 'reset-password' hona chahiye)
     // Example Link: http://localhost:3000/reset-password?token=xyz...
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = 'http://localhost:3000';
     const actionLink = `${frontendUrl}/reset-password?token=${token}`;
 
     try {
-      await sgMail.send({
+      const response = await sgClient.send({
         to,
-        from: process.env.MAIL_FROM!,
+        from: fromEmail,
         subject: 'Reset your SalesPilot Password 🔐', // Subject thoda urgent/secure lagna chahiye
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -245,10 +388,11 @@ async sendPasswordResetEmail(
           </div>
         `,
       });
-
-      console.log(`Password reset email sent to ${to}`);
+      if (response) {
+        console.log(`Password reset email sent to ${to}`);
+      }
     } catch (error: unknown) {
       handleSendGridError(error);
     }
-}
+  }
 }

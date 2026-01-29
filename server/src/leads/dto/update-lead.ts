@@ -5,4 +5,7 @@ import { CreateLeadInput } from './create-lead.input';
 export class UpdateLeadInput extends PartialType(CreateLeadInput) {
   @Field({ nullable: true })
   status?: string;
+
+  @Field({nullable:true})
+  assignedTo?:string;
 }

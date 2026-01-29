@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { ObjectType, Field, ID } from '@nestjs/graphql';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type BookingDocument = Booking & Document;
 
@@ -13,6 +13,10 @@ export class Booking {
   @Field()
   @Prop({ required: true })
   leadId: string; // Lead ka ID taaki connect kar sakein
+
+  @Field(() => ID)
+  @Prop({ required: true })
+  organizationId: Types.ObjectId; // Organization ID taaki connect kar sakein
 
   @Field()
   @Prop({ required: true })

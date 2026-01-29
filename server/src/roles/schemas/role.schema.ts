@@ -1,13 +1,13 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Types } from 'mongoose';
-import { ObjectType, Field } from '@nestjs/graphql';
+import { ObjectType, Field, ID } from '@nestjs/graphql';
 
 export type RolesDocument = Roles & Document;
 
 @ObjectType()
-@Schema({timestamps: true})
+@Schema({ timestamps: true })
 export class Roles {
-  @Field()
+  @Field(() => ID)
   _id: Types.ObjectId;
 
   @Prop({ required: true })
@@ -15,21 +15,21 @@ export class Roles {
   name: string;
 
   @Prop({ required: true })
-  @Field()
+  @Field(() => [String])
   permissions: string[];
 
   @Prop({
     required: true,
-    unique: true,
+    index: true,
     type: Types.ObjectId,
     ref: 'Organization',
   })
-  @Field()
+  @Field(() => ID)
   organizationID: Types.ObjectId;
 
-  @Prop({default:false})
+  @Prop({ default: false })
   @Field()
-  isSystemRole:Boolean;
+  isSystemRole: Boolean;
 
   @Prop({ default: false })
   @Field()

@@ -3,6 +3,8 @@ import {
   ForbiddenException,
   Injectable,
   UnauthorizedException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { UsersService } from '../users/users.service';
@@ -12,8 +14,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateOrganizationInput } from './dto/createOrganizationInput.dto';
 import { TokensService } from 'src/services/Tokens.service';
 import { OrganizationService } from 'src/organization/organization.service';
-import { Roles, RolesDocument } from 'src/roles/schemas/role.schema';
-import { DefaultRoleService } from 'src/services/seedingScripts/defaultRole.service';
+import { RolesService } from 'src/roles/roles.service';
 import { SetupAccountInput } from './dto/setup-account.dto';
 import { LoginInput } from './dto/loginInput.dto';
 import { ForgatPasswordInput } from './dto/forgatPasswordInput';
@@ -25,34 +26,26 @@ import { ResetPasswordInput } from './dto/resetPasswordInput';
 export class AuthService {
   constructor(
     @InjectConnection() private readonly connection: Connection,
-    private usersService: UsersService,
-    private jwtService: JwtService,
+    @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
     private orgService: OrganizationService,
+    @Inject(forwardRef(() => TokensService))
     private tokensService: TokensService,
-    private defaultRoleService: DefaultRoleService,
-    @InjectModel(Roles.name)
-    private rolesModel: Model<RolesDocument>,
-    private mailService: MailService,
+    @Inject(forwardRef(() => RolesService)) private rolesService: RolesService,
+    @Inject(forwardRef(() => MailService)) private mailService: MailService,
   ) {}
 
   async createOrganization(input: CreateOrganizationInput) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
     try {
-      const { name, email, password, phone } = input;
+      const { name, email, ownerPassword, phone, ownerName } = input;
 
-      const organization = await this.orgService.createOrganization(
-        input,
-        session,
-      );
+      const organization = await this.orgService.createOrganization(input);
       if (!organization)
         throw new BadRequestException(
           'Something went wrong while creating organization',
         );
 
-      const defaultRoles = await this.defaultRoleService.createDefaultRoles(
-        new Types.ObjectId(organization._id),
-        session,
+      const defaultRoles = await this.rolesService.createDefaultRoles(
+        organization._id.toString(),
       );
 
       if (!defaultRoles)
@@ -61,31 +54,29 @@ export class AuthService {
         );
 
       const orgId = organization._id;
-      const role = await this.rolesModel
-        .findOne({
-          name: 'Owner',
-          organizationId: orgId,
-        })
-        .session(session);
+      const role = await this.rolesService.getRoleByName(
+        'Owner',
+        new Types.ObjectId(orgId),
+      );
 
-      if (!role)
+      if (!role) {
         throw new BadRequestException(
           'Something went wrong while creating role',
         );
+      }
 
-      const user = await this.usersService.createUser(
-        {
-          name,
-          email,
-          phone,
-          password,
-          role: new Types.ObjectId(role._id),
-          organizationId: new Types.ObjectId(orgId),
-        },
-        session,
-      );
+      const user = await this.usersService.createUser({
+        name: ownerName,
+        email,
+        phone,
+        password: ownerPassword,
+        role: new Types.ObjectId(role._id),
+        organizationId: new Types.ObjectId(orgId),
+      });
 
-      if (!user || !user._id)
+      await user.populate('role');
+
+      if (!user)
         throw new BadRequestException(
           'Something went wrong while creating user',
         );
@@ -103,16 +94,12 @@ export class AuthService {
         new Types.ObjectId(user._id),
         refreshToken,
         new Types.ObjectId(orgId),
-        session,
       );
 
-      session.commitTransaction();
-      return { refreshToken, accessToken, user };
+      return { refreshToken, accessToken, user, organization };
     } catch (error) {
-      await session.abortTransaction();
+      console.error(error);
       throw error;
-    } finally {
-      session.endSession();
     }
   }
 
@@ -124,6 +111,7 @@ export class AuthService {
     user.status = 'ACTIVE';
     user.inviteToken = null;
     await user.save();
+    await user.populate('role'); // Populate role for complete user data
 
     const refreshToken = await this.tokensService.generateRefreshToken(
       new Types.ObjectId(user._id),
@@ -146,6 +134,7 @@ export class AuthService {
   async login(input: LoginInput) {
     const user = await this.usersService.findOne({ email: input.email });
     if (!user) throw new BadRequestException('Invalid email');
+    await user.populate('role');
 
     const isMatch = await bcrypt.compare(input.password, user.password);
     if (!isMatch) throw new BadRequestException('Invalid password');
@@ -231,7 +220,10 @@ export class AuthService {
   }
 
   async resetPassword(input: ResetPasswordInput) {
-    const user = await this.usersService.findOne({ TempToken: input.token, ExpiryTempToken: { $gt: new Date() } });
+    const user = await this.usersService.findOne({
+      TempToken: input.token,
+      ExpiryTempToken: { $gt: new Date() },
+    });
     if (!user) throw new BadRequestException('Invalid token or token expired');
 
     user.password = (await bcrypt.hash(input.password, 10)).toString();

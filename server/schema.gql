@@ -1,0 +1,283 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Roles {
+  _id: ID!
+  name: String!
+  permissions: [String!]!
+  organizationID: ID!
+  isSystemRole: Boolean!
+  isDeleted: Boolean!
+}
+
+type Organization {
+  _id: ID!
+  name: String!
+  domain: String!
+  logoUrl: String
+  senderEmail: String
+  senderName: String
+  apiKey: String
+  iv: String
+  emailServiceStatus: Boolean!
+  email: String!
+  ownerName: String!
+  phone: String!
+}
+
+type User {
+  _id: ID!
+  name: String!
+  email: String!
+  activeLeadsCount: Int
+  isAssignable: Boolean!
+  organizationId: Organization!
+  role: Roles!
+  refreshToken: String!
+  status: String!
+  phone: String!
+  inviteToken: String
+  ExpiryTempToken: DateTime
+  TempToken: String
+  avatar: String
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type PaginatedUsers {
+  items: [User!]!
+  totalCount: Int!
+}
+
+type DeleteUserOutput {
+  message: String!
+}
+
+type ForgotPasswordResponse {
+  message: String!
+}
+
+type ResetPasswordResponse {
+  message: String!
+}
+
+type AuthPayload {
+  accessToken: String!
+  user: User!
+}
+
+type OrganizationOutput {
+  totalCount: Float!
+  items: [Organization!]!
+}
+
+type TimelineItem {
+  event: String!
+  timestamp: DateTime!
+}
+
+type Lead {
+  _id: ID!
+  name: String!
+  email: String!
+  phone: String!
+  organizationId: ID!
+  assignedTo: User
+  source: String!
+  budget: Int!
+  serviceType: String!
+  status: String!
+  timeline: [TimelineItem!]!
+}
+
+type PaginatedLeads {
+  items: [Lead!]!
+  totalCount: Int!
+}
+
+type Booking {
+  _id: ID!
+  leadId: String!
+  organizationId: ID!
+  clientName: String!
+  clientEmail: String!
+  date: DateTime!
+  timeSlot: String!
+  meetingLink: String!
+  status: String!
+}
+
+type Inquiry {
+  _id: String!
+  firstName: String!
+  lastName: String!
+  email: String!
+  companyName: String
+  message: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type InquiryOutput {
+  items: [Inquiry!]!
+  totalCount: Int!
+}
+
+type Query {
+  leads(skip: Int!, take: Int!): PaginatedLeads!
+  getLead(id: String!): Lead!
+  findAllUsers(skip: Int!, take: Int!): PaginatedUsers!
+  findUser(userId: String!): User!
+  findMe: User!
+  searchUsers(search: String!): [User!]!
+  findAll(skip: Int!, take: Int!): OrganizationOutput!
+  emailServiceStatus: Boolean!
+  getRoles: [Roles!]!
+  getInquiries(skip: Int!, take: Int!): InquiryOutput!
+}
+
+type Mutation {
+  createLead(createLeadInput: CreateLeadInput!, manualUserId: String): Lead!
+  updateLeadStatus(id: String!, status: String!): Lead!
+  UpdateLead(id: String!, data: UpdateLeadInput!): Lead!
+  deleteLead(id: String!): Boolean!
+  sendProposal(id: String!): Boolean!
+  singleLeadAssignment(leadId: String!, userId: String!): Lead!
+  createUser(input: CreateUserInput!): User!
+  createAdminUser(input: CreateAdminUserInput!): User!
+  updateUser(input: UpdateUserInput!, userId: String!): User!
+  deleteUser(userId: String!): DeleteUserOutput!
+  createOrganization(input: CreateOrganizationInput!): AuthPayload!
+  setupAccount(input: SetupAccountInput!): User!
+  login(input: LoginInput!): AuthPayload!
+  logout: Boolean!
+  UpdateExpireAccessToken: User!
+  forgatePassword(input: ForgatPasswordInput!): ForgotPasswordResponse!
+  resetPassword(input: ResetPasswordInput!): ResetPasswordResponse!
+  deleteOrganization(id: String!): Boolean!
+  emailEnable(data: emailEnableData!): Boolean!
+  createRole(input: CreateRoleInput!): Roles!
+  deleteRole(roleID: String!): Roles!
+  updateRole(input: UpdateRoleInput!): Roles!
+  createBooking(createBookingInput: CreateBookingInput!): Booking!
+  createInquiry(createInquiryInput: CreateInquiryInput!): Inquiry!
+}
+
+input CreateLeadInput {
+  name: String!
+  email: String!
+  phone: String!
+  budget: Int!
+  serviceType: String!
+}
+
+input UpdateLeadInput {
+  name: String
+  email: String
+  phone: String
+  budget: Int
+  serviceType: String
+  status: String
+  assignedTo: String
+}
+
+input CreateUserInput {
+  name: String!
+  email: String!
+  password: String!
+  phone: String!
+  avatar: String!
+  role: ID!
+  organizationId: ID!
+}
+
+input CreateAdminUserInput {
+  name: String!
+  email: String!
+  phone: String!
+  role: ID!
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  password: String
+  phone: String
+  avatar: String
+  role: ID
+  organizationId: ID
+}
+
+input CreateOrganizationInput {
+  name: String!
+  domain: String!
+  email: String!
+  phone: String!
+  ownerPassword: String!
+  ownerName: String!
+  logoUrl: String
+}
+
+input SetupAccountInput {
+  token: String!
+  password: String!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+}
+
+input ForgatPasswordInput {
+  email: String!
+}
+
+input ResetPasswordInput {
+  token: String!
+  password: String!
+}
+
+input emailEnableData {
+  email: String!
+  name: String!
+  apiKey: String!
+}
+
+input CreateRoleInput {
+  name: String!
+  permissions: [String!]!
+}
+
+input UpdateRoleInput {
+  name: String
+  permissions: [String!]
+  _id: ID!
+}
+
+input CreateBookingInput {
+  leadId: String!
+  date: DateTime!
+  timeSlot: String!
+}
+
+input CreateInquiryInput {
+  firstName: String!
+  lastName: String!
+  email: String!
+  companyName: String
+  message: String!
+}
+
+type Subscription {
+  leadAdded: Lead!
+  leadUpdated: Lead!
+  leadDeleted: String!
+  userAdded: User!
+  userUpdated: User!
+  userDeleted: String!
+  SetUpAccount: AuthPayload!
+}

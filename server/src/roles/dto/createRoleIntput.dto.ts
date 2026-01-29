@@ -1,16 +1,16 @@
-import { InputType, Field } from "@nestjs/graphql";
-import { IsString, IsNotEmpty, IsOptional } from "class-validator";
-import { Types } from "mongoose";
+import { InputType, Field } from '@nestjs/graphql';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { Types } from 'mongoose';
 
 @InputType()
-export class CreateRoleInput{
-    @Field()
-    @IsString()
-    @IsNotEmpty()
-    name: string;
+export class CreateRoleInput {
+  @Field()
+  @IsString()
+  @IsNotEmpty()
+  name: string;
 
-    @Field()
-    @IsString()
-    @IsNotEmpty()
-    permissions: string[];
+  @Field(() => [String])
+  @IsString({ each: true })
+  @IsNotEmpty()
+  permissions: string[];
 }

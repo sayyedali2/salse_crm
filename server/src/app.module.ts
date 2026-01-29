@@ -5,6 +5,7 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { join } from 'path';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
 
 // Modules
 import { PubSubModule } from './common/pubsub.module';
@@ -15,12 +16,10 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { OrganizationModule } from './organization/organization.module';
 import { RolesModule } from './roles/roles.module';
-import { RoleService } from './role/role.service';
-import { RolesModule } from './roles/roles.module';
-import { RolesResolver } from './roles/roles.resolver';
-import { RoleResolver } from './role/role.resolver';
-import { RolService } from './rol/rol.service';
-import { RoleService } from './role/role.service';
+import { InquiryModule } from './inquiry/inquiry.module';
+
+// Guards
+import { PermissionGuard } from './common/decorator/permission/permission.gaurd';
 
 @Module({
   imports: [
@@ -44,7 +43,7 @@ import { RoleService } from './role/role.service';
     // 4. GraphQL Setup with Subscriptions
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+      autoSchemaFile: join(process.cwd(), 'schema.gql'),
       playground: true,
       introspection: true,
       context: ({ req, res }) => ({ req, res }),
@@ -69,8 +68,8 @@ import { RoleService } from './role/role.service';
     AuthModule,
     OrganizationModule,
     RolesModule,
+    InquiryModule,
   ],
-  // Note: Providers yahan khali hain kyunki PubSub 'PubSubModule' se aa raha hai
-  providers: [RoleService, RolService, RoleResolver, RolesResolver],
+  providers: [PermissionGuard],
 })
 export class AppModule {}

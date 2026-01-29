@@ -34,6 +34,8 @@ export const PERMISSIONS = {
 
   ORG_UPDATE: 'org.update', // Company name/logo change karna
   ORG_BILLING: 'org.billing', // Plan upgrade karna, Invoice dekhna
+  ORG_DELETE: 'org.delete', // Company delete karna
+  ORG_VIEW: 'org.view',
 
   // ==========================================
   // 4. ROLES & PERMISSIONS (RBAC) 🔐

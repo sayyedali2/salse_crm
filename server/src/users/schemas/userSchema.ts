@@ -1,12 +1,14 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType, Int } from '@nestjs/graphql';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { Roles } from '../../roles/schemas/role.schema';
+import { Organization } from '../../organization/schemas/organization.schema';
 
 export type UserDocument = User & Document;
 export enum UserStatus {
-  ACTIVE = 'active',
-  PENDING = 'pending',
-  INACTIVE = 'inactive',
+  ACTIVE = 'ACTIVE',
+  PENDING = 'PENDING',
+  INACTIVE = 'INACTIVE',
 }
 
 @ObjectType()
@@ -14,6 +16,7 @@ export enum UserStatus {
 export class User {
   @Field(() => ID)
   _id: Types.ObjectId;
+
   @Field()
   @Prop({ required: true })
   name: string;
@@ -22,10 +25,18 @@ export class User {
   @Prop({ required: true, unique: true, lowercase: true, trim: true })
   email: string;
 
+  @Field(() => Int, { nullable: true })
+  @Prop({ type: 'number' })
+  activeLeadsCount?: { type: Number; default: 0 };
+
+  @Field(() => Boolean)
+  @Prop({ type: 'boolean', default: true })
+  isAssignable: Boolean;
+
   @Prop({ required: true })
   password: string;
 
-  @Field(() => ID)
+  @Field(() => Organization)
   @Prop({
     type: Types.ObjectId,
     ref: 'Organization',
@@ -34,8 +45,8 @@ export class User {
   })
   organizationId: Types.ObjectId;
 
-  @Field(() => ID)
-  @Prop({ type: Types.ObjectId, ref: 'Role', required: true })
+  @Field(() => Roles)
+  @Prop({ type: Types.ObjectId, ref: 'Roles', required: true })
   role: Types.ObjectId;
 
   @Field()
@@ -50,23 +61,21 @@ export class User {
   @Prop({ required: true })
   phone: string;
 
-  @Field()
-  @Prop({ default: null })
+  @Field(() => String, { nullable: true })
+  @Prop({ type: String, default: null })
   inviteToken?: string | null;
 
-  @Field()
-  @Prop({ default: null })
+  @Field(() => Date, { nullable: true })
+  @Prop({ type: Date, default: null })
   ExpiryTempToken?: Date | null;
 
-  @Field()
-  @Prop({ default: null })
+  @Field(() => String, { nullable: true })
+  @Prop({ type: String, default: null })
   TempToken?: string | null;
 
-  @Field()
+  @Field(() => String, { nullable: true })
   @Prop()
   avatar?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
-
-UserSchema.index({ organizationId: 1 });

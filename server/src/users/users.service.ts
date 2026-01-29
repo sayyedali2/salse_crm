@@ -1,4 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ClientSession, Model, Types } from 'mongoose';
 
@@ -14,7 +21,7 @@ import { UpdateUserInput } from './dto/updateUserInput.dto';
 export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private readonly mailService: MailService,
+    @Inject(forwardRef(() => MailService)) private mailService: MailService,
   ) {}
 
   async findOne(filter: any): Promise<UserDocument | undefined> {
@@ -26,7 +33,7 @@ export class UsersService {
     return user;
   }
 
-  async createUser(input: CreateUserInput, session?: ClientSession) {
+  async createUser(input: CreateUserInput) {
     const { name, email, password, role, organizationId, phone } = input;
 
     const existingUser = await this.userModel.findOne({
@@ -38,10 +45,17 @@ export class UsersService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [user] = await this.userModel.create(
-      [{ name, email, password: hashedPassword, role, organizationId, phone }],
-      session ? { session } : undefined,
-    );
+    const [user] = await this.userModel.create([
+      {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        organizationId,
+        phone,
+        isAssignable: false,
+      },
+    ]);
 
     return user;
   }
@@ -49,7 +63,6 @@ export class UsersService {
   async adminCreateUser(
     input: CreateAdminUserInput,
     organizationId?: Types.ObjectId,
-    session?: ClientSession,
   ) {
     const { name, email, role, phone } = input;
     const inviteToken: any = crypto.randomBytes(8).toString('hex');
@@ -61,21 +74,16 @@ export class UsersService {
 
     if (existingUser) throw new BadRequestException('User already exists');
 
-    const [user] = await this.userModel.create(
-      [
-        {
-          name,
-          email,
-          role,
-          organizationId,
-          phone,
-          password: crypto.randomBytes(8).toString('hex'),
-          status: 'PENDING',
-          inviteToken,
-        },
-      ],
-      session ? { session } : undefined,
-    );
+    const user = await this.userModel.create({
+      name,
+      email,
+      role: new Types.ObjectId(role),
+      organizationId,
+      phone,
+      password: crypto.randomBytes(8).toString('hex'),
+      status: 'PENDING',
+      inviteToken,
+    });
 
     if (!user) throw new BadRequestException('User not created');
 
@@ -86,6 +94,7 @@ export class UsersService {
     );
 
     if (!mailResponse) throw new BadRequestException('Mail not sent');
+    await user.populate('role');
     return user;
   }
 
@@ -96,24 +105,98 @@ export class UsersService {
     });
   }
 
-  async updateUser(input: UpdateUserInput, organizationId: string) {
-    const { _id, ...rest } = input;
-    const user = await this.userModel.findOneAndUpdate(
-      { _id, organizationId },
-      { $set: rest },
-      { new: true },
-    );
+  async updateUser(
+    input: UpdateUserInput,
+    organizationId: string,
+    userId: string,
+  ) {
+    const { ...rest } = input;
+    const user = await this.userModel
+      .findOneAndUpdate(
+        {
+          _id: new Types.ObjectId(userId),
+          organizationId: new Types.ObjectId(organizationId),
+        },
+        { $set: rest },
+        { new: true },
+      )
+      .populate('role');
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
 
   async deleteUser(_id: string, organizationId: string) {
-    const user = await this.userModel.findOneAndDelete({ _id: new Types.ObjectId(_id), organizationId: new Types.ObjectId(organizationId) });
+    const user = await this.userModel
+      .findOne({
+        _id: new Types.ObjectId(_id),
+        organizationId: new Types.ObjectId(organizationId),
+      })
+      .populate('role');
+
     if (!user) throw new NotFoundException('User not found');
+
+    if ((user.role as any)?.name === 'Owner') {
+      throw new ForbiddenException('Owner cannot be deleted');
+    }
+
+    await this.userModel.deleteOne({ _id: user._id });
     return user;
   }
 
-  async findAllUsers(organizationId: string) {
-    return this.userModel.find({ organizationId: new Types.ObjectId(organizationId) });
+  async findAllUsers(organizationId: string, skip: number, take: number) {
+    const users = await this.userModel
+      .find({
+        organizationId: new Types.ObjectId(organizationId),
+      })
+      .skip(skip)
+      .limit(take)
+      .populate('role');
+    const totalCount = await this.userModel.countDocuments({
+      organizationId: new Types.ObjectId(organizationId),
+    });
+    return { items: users, totalCount };
+  }
+
+  findMe(userId: string, organizationId: string) {
+    return this.userModel.findOne({
+      _id: new Types.ObjectId(userId),
+      organizationId: new Types.ObjectId(organizationId),
+    });
+  }
+
+  async getAll(data: any) {
+    return this.userModel.find(data);
+  }
+
+  async incrementLeadCount(organizationId, id, num: number) {
+    return this.userModel.findOneAndUpdate(
+      { _id: id, organizationId },
+      {
+        $inc: { activeLeadsCount: num },
+      },
+    );
+  }
+
+  async bulkWrite(options: any) {
+    return this.userModel.bulkWrite(options);
+  }
+
+  // user.service.ts
+  async findUsersBySearch(orgId: string, search: string) {
+    const query = {
+      organizationId: new Types.ObjectId(orgId),
+      status: 'ACTIVE',
+      isAssignable: true,
+      $or: [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ],
+    };
+
+    return this.userModel
+      .find(query as any)
+      .select('_id name email')
+      .limit(10)
+      .exec();
   }
 }

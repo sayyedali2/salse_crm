@@ -66,43 +66,36 @@ export class DefaultRoleService {
     @InjectModel(Roles.name) private rolesModel: Model<RolesDocument>,
   ) {}
 
-  async createDefaultRoles(
-    organizationID: Types.ObjectId,
-    session?: ClientSession,
-  ) {
-    const adminRole = await this.rolesModel.create(
-      [
-        {
-          name: 'Admin',
-          permissions: admin,
-          isSystemRole: true,
-          organizationID,
-        },
-      ],
-      session ? { session } : undefined,
-    );
-    const salesRole = await this.rolesModel.create(
-      [
-        {
-          name: 'Sales',
-          permissions: sales,
-          isSystemRole: true,
-          organizationID,
-        },
-      ],
-      session ? { session } : undefined,
-    );
-    const ownerRole = await this.rolesModel.create(
-      [
-        {
-          name: 'Owner',
-          permissions: owner,
-          isSystemRole: true,
-          organizationID,
-        },
-      ],
-      session ? { session } : undefined,
-    );
-    return { adminRole, salesRole, ownerRole };
+  async createDefaultRoles(organizationID: string) {
+    try {
+      const adminRole = await this.rolesModel.create({
+        name: 'Admin',
+        permissions: admin,
+        isSystemRole: true,
+        organizationID: new Types.ObjectId(organizationID),
+      });
+
+      const salesRole = await this.rolesModel.create({
+        name: 'Sales',
+        permissions: sales,
+        isSystemRole: true,
+        organizationID: new Types.ObjectId(organizationID),
+      });
+
+      const ownerRole = await this.rolesModel.create({
+        name: 'Owner',
+        permissions: owner,
+        isSystemRole: true,
+        organizationID: new Types.ObjectId(organizationID),
+      });
+
+      return { adminRole, salesRole, ownerRole };
+    } catch (error) {
+      console.error(
+        '[DefaultRoleService] Error creating default roles:',
+        error,
+      );
+      throw error;
+    }
   }
 }

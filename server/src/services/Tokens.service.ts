@@ -2,6 +2,8 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';
@@ -16,7 +18,7 @@ export class TokensService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
-    private usersService: UsersService,
+    @Inject(forwardRef(() => UsersService)) private usersService: UsersService,
   ) {}
 
   generateRefreshToken(_id: Types.ObjectId, orgId: Types.ObjectId) {
@@ -45,7 +47,7 @@ export class TokensService {
       { _id: _id.toString(), organizationId: orgId.toString() },
       process.env.ACCESS_TOKEN_SECRET,
       {
-        expiresIn: '15m',
+        expiresIn: '15d',
       },
     );
     return accessToken;
@@ -55,12 +57,10 @@ export class TokensService {
     _id: Types.ObjectId,
     refreshToken: string,
     organizationId: Types.ObjectId,
-    session?: ClientSession,
   ) {
     const result = await this.userModel.updateOne(
       { _id, organizationId },
       { $set: { refreshToken } },
-      session ? { session } : undefined,
     );
 
     if (result.matchedCount === 0) {
