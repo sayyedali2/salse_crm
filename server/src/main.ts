@@ -14,6 +14,7 @@ async function bootstrap() {
       'https://salse-crm.vercel.app',
       'https://www.salse-crm.vercel.app',
       'http://localhost:3000',
+      /\.vercel\.app$/, // Allow all Vercel subdomains (preview URLs)
     ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
