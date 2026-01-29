@@ -3,16 +3,18 @@ import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import * as mongoose from 'mongoose';
 
-
 async function bootstrap() {
   // mongoose.set('debug', true);
   const app = await NestFactory.create(AppModule);
 
-
   app.use(cookieParser());
   // 👇 SABSE ZAROORI: CORS Enable karna
   app.enableCors({
-    origin: 'https://salse-crm.vercel.app', // Iska matlab: "Sabko allow karo"
+    origin: [
+      'https://salse-crm.vercel.app',
+      'https://www.salse-crm.vercel.app',
+      'http://localhost:3000',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
