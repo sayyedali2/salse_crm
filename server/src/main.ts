@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import * as mongoose from 'mongoose';
+import { truncateSync } from 'fs';
 
 async function bootstrap() {
   // mongoose.set('debug', true);
@@ -10,12 +11,7 @@ async function bootstrap() {
   app.use(cookieParser());
   // 👇 SABSE ZAROORI: CORS Enable karna
   app.enableCors({
-    origin: [
-      'https://salse-crm.vercel.app',
-      'https://www.salse-crm.vercel.app',
-      'http://localhost:3000',
-      /\.vercel\.app$/, // Allow all Vercel subdomains (preview URLs)
-    ],
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
