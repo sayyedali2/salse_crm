@@ -280,7 +280,7 @@ export class MailService {
     sgClient.setApiKey(apiKey);
     // 1. Link Generate karo (Env se Frontend URL uthao)
     // Example Link: http://localhost:3000/setup-account?token=abc123xyz
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://salse-crm.vercel.app/';
     const actionLink = `${frontendUrl}/setup-account?token=${token}`;
 
     try {
@@ -350,7 +350,7 @@ export class MailService {
     sgClient.setApiKey(apiKey);
     // 1. Link Generate (Frontend route 'reset-password' hona chahiye)
     // Example Link: http://localhost:3000/reset-password?token=xyz...
-    const frontendUrl = 'http://localhost:3000';
+    const frontendUrl = 'https://salse-crm.vercel.app/';
     const actionLink = `${frontendUrl}/reset-password?token=${token}`;
 
     try {
