@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: salse-crm-server
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: 22.2.0
