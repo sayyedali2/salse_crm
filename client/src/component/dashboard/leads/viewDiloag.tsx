@@ -100,6 +100,11 @@ interface UpdateLeadInput {
 export default function ViewDialog(lead: LeadDialog) {
   const [deleteLeadMutation] = useMutation(DELETE_LEAD);
   const [updateLeadMutation] = useMutation(UPDATE_LEAD);
+  const [sendProposal] = useMutation(gql`
+    mutation SendProposal($id: String!) {
+      sendProposal(id: $id)
+    }
+  `);
   const { notify } = useNotification();
   const theme = useTheme();
 
@@ -135,6 +140,19 @@ export default function ViewDialog(lead: LeadDialog) {
   const handleClose = () => {
     setIsEditing(false);
     lead.onClose();
+  };
+
+  const handleSendProposal = async () => {
+    if (!lead.lead?._id) return;
+    try {
+      await sendProposal({
+        variables: { id: lead.lead._id.toString() },
+      });
+      notify("Proposal sent successfully!", "success");
+      lead.onClose();
+    } catch (error: any) {
+      notify("Failed to send proposal", error.message);
+    }
   };
 
   const handleUpdate = async (data: LeadsData) => {
@@ -411,22 +429,37 @@ export default function ViewDialog(lead: LeadDialog) {
             </Button>
           </Stack>
         ) : (
-          <Button
-            onClick={handleDelete}
-            fullWidth={isMobile}
-            variant="contained"
-            sx={{
-              bgcolor: theme.palette.error.main,
-              color: "#fff",
-              borderRadius: 3,
-              px: 6,
-              py: 1.5,
-              fontWeight: 800,
-              "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.8) },
-            }}
-          >
-            Delete
-          </Button>
+          <>
+            <Button
+              onClick={handleSendProposal}
+              sx={{
+                mr: 2,
+                color: electricBlue,
+                borderColor: electricBlue,
+                fontWeight: 800,
+                "&:hover": { bgcolor: alpha(electricBlue, 0.1) },
+              }}
+              variant="outlined"
+            >
+              Send Proposal
+            </Button>
+            <Button
+              onClick={handleDelete}
+              fullWidth={isMobile}
+              variant="contained"
+              sx={{
+                bgcolor: theme.palette.error.main,
+                color: "#fff",
+                borderRadius: 3,
+                px: 6,
+                py: 1.5,
+                fontWeight: 800,
+                "&:hover": { bgcolor: alpha(theme.palette.error.main, 0.8) },
+              }}
+            >
+              Delete
+            </Button>
+          </>
         )}
       </DialogActions>
     </Dialog>
