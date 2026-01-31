@@ -175,7 +175,10 @@ export class LeadsResolver {
     @Args('id', { type: () => String }) id: string,
     @Context() context: any,
   ) {
-    return this.leadsService.findOne(id, context.req.user.organizationId);
+    return this.leadsService.findOne(
+      { _id: id },
+      context.req.user.organizationId,
+    );
   }
 
   @Mutation(() => Boolean)
@@ -189,7 +192,7 @@ export class LeadsResolver {
       context.req.user.organizationId,
     );
     const lead = await this.leadsService.findOne(
-      id,
+      { _id: id },
       context.req.user.organizationId,
     );
     await this.mailService.sendProposalEmail(lead.email, lead.name, pdfBuffer);
