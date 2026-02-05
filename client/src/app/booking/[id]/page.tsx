@@ -116,6 +116,7 @@ export default function BookingPage() {
     }
 
     try {
+      setErrorMsg(""); // Clear previous errors
       const result = await createBooking({
         variables: {
           createBookingInput: {
@@ -132,8 +133,23 @@ export default function BookingPage() {
         setErrorMsg("Booking failed. Try another slot.");
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      setErrorMsg(message || "Booking failed. Try another slot.");
+      let errorMessage = "Booking failed. Please try again.";
+      
+      if (err instanceof Error) {
+        // Handle Apollo GraphQL errors
+        if (err.message.includes("403") || err.message.includes("Forbidden")) {
+          errorMessage = "Access denied. Please refresh the page and try again.";
+        } else if (err.message.includes("already booked")) {
+          errorMessage = "This time slot is already booked. Please choose another.";
+        } else if (err.message.includes("Lead not found")) {
+          errorMessage = "Lead information could not be found.";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      setErrorMsg(errorMessage);
+      console.error("Booking Error:", err);
     }
   };
 

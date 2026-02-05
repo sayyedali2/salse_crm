@@ -225,6 +225,17 @@ export class LeadsService {
     return lead;
   }
 
+  // Public method to find a lead by ID (used for public booking endpoints)
+  async findLeadById(leadId: string): Promise<Lead> {
+    const lead = await this.leadModel.findOne({
+        _id: leadId,
+      })
+      .lean()
+      .exec();
+    if (!lead) throw new BadRequestException('Lead not found');
+    return lead as Lead;
+  }
+
   async updateStatus(
     id: string,
     status: string,

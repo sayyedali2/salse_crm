@@ -13,8 +13,17 @@ export class BookingsService {
     private leadsService: LeadsService, // Lead service inject karein
   ) {}
 
-  async createBooking(createBookingInput: CreateBookingInput, orgId: string) {
-    // 1. Check if slot is already booked
+  async createBooking(createBookingInput: CreateBookingInput) {
+    // 1. First, fetch the lead by ID to get organization details
+    const lead = await this.leadsService.findLeadById(createBookingInput.leadId);
+
+    if (!lead) {
+      throw new BadRequestException('Lead not found');
+    }
+
+    const orgId = lead.organizationId;
+
+    // 2. Check if slot is already booked
     const existingBooking = await this.bookingModel.findOne({
       organizationId: new Types.ObjectId(orgId),
       date: createBookingInput.date,
@@ -25,18 +34,6 @@ export class BookingsService {
       throw new BadRequestException(
         'This slot is already booked! Please choose another.',
       );
-    }
-
-    // 2. Lead Details fetch karein (Name aur Email ke liye)
-    // Note: Iske liye LeadsService me `findOne` method hona chahiye (Step 5 me dekhein)
-
-    const lead = await this.leadsService.findOne(
-      createBookingInput.leadId,
-      orgId,
-    );
-
-    if (!lead) {
-      throw new BadRequestException('Lead not found');
     }
 
     // 3. Generate Meeting Link (Mock Logic)
@@ -55,13 +52,10 @@ export class BookingsService {
 
     await newBooking.save();
 
-    // 5. Update Lead Status to "MEETING_BOOKED" [cite: 22]
-    // Hum LeadsService ka use karke status update karenge
-    await this.leadsService.updateStatus(lead._id, 'MEETING_BOOKED', orgId);
+    // 5. Update Lead Status to "MEETING_BOOKED"
+    await this.leadsService.updateStatus(lead._id.toString(), 'MEETING_BOOKED', orgId.toString());
 
-    // 6. Send Confirmation Email (ICS Logic later) [cite: 20]
-    // Abhi simple confirmation email bhejte hain
-    // TODO: Add ICS attachment functionality in MailService
+    // 6. Send Confirmation Email
     console.log(`Sending meeting confirmation to ${lead.email}`);
 
     return newBooking;
