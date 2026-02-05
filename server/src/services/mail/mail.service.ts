@@ -395,4 +395,76 @@ export class MailService {
       handleSendGridError(error);
     }
   }
+
+  async sendBookingConfirmationEmail(
+    to: string,
+    name: string,
+    meetingLink: string,
+    date: string,
+    timeSlot: string,
+    companyConfig?: { apiKey: string; fromEmail: string },
+  ): Promise<void> {
+    const sgClient = new SendGridClient();
+    let apiKey = this.crmApiKey;
+    let fromEmail = this.crmFromEmail;
+
+    if (companyConfig && companyConfig.apiKey) {
+      apiKey = companyConfig.apiKey;
+      fromEmail = companyConfig.fromEmail;
+    }
+
+    if (!apiKey) {
+      throw new BadRequestException('SendGrid API Key is missing');
+    }
+    if (!fromEmail) {
+      throw new BadRequestException('From Email is missing');
+    }
+
+    sgClient.setApiKey(apiKey);
+    try {
+      await sgClient.send({
+        to,
+        from: fromEmail,
+        subject: '✅ Your Meeting Has Been Confirmed!',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #10b981;">Meeting Confirmed! 🎉</h2>
+            
+            <p>Hi ${name},</p>
+            
+            <p>Your meeting has been successfully scheduled. Here are the details:</p>
+            
+            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>Date:</strong> ${date}</p>
+              <p><strong>Time:</strong> ${timeSlot}</p>
+              <p><strong>Duration:</strong> 30 Minutes</p>
+            </div>
+
+            <p style="margin: 20px 0;"><strong>Meeting Link:</strong></p>
+            <div style="margin: 15px 0;">
+              <a href="${meetingLink}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+                Join Meeting
+              </a>
+            </div>
+
+            <p style="color: #555; font-size: 14px;">Or copy this link: <a href="${meetingLink}" style="color: #10b981;">${meetingLink}</a></p>
+            
+            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+            
+            <p style="color: #666; font-size: 14px;">
+              Please join 5 minutes before the scheduled time. We look forward to discussing your project!
+            </p>
+            
+            <p style="margin-top: 20px;">Regards,<br/><strong>SalesPilot Team</strong></p>
+          </div>
+        `,
+      });
+
+      console.log(`Booking confirmation email sent to ${to}`);
+    } catch (error: unknown) {
+      handleSendGridError(error);
+      // Don't throw - email failure shouldn't break the booking
+      console.error('Failed to send booking confirmation email, but booking was successful');
+    }
+  }
 }

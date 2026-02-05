@@ -272,19 +272,19 @@ export default function BookingPage() {
           )}
 
           {/* Date Picker (Native HTML for simplicity) */}
-          <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+          <Typography variant="subtitle2" color="#1e293b" fontWeight="bold" mb={1}>
             1. Pick a Date
           </Typography>
           <TextField
             type="date"
             fullWidth
-            sx={{ mb: 4, bgcolor: "white" }}
+            sx={{ mb: 4, bgcolor: "white",color:"#1e293b" }}
             InputLabelProps={{ shrink: true }}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
 
           {/* Time Slots */}
-          <Typography variant="subtitle2" fontWeight="bold" mb={1}>
+          <Typography variant="subtitle2" color="#1e293b" fontWeight="bold" mb={1}>
             2. Pick a Slot
           </Typography>
           <Grid container spacing={2} mb={4}>
