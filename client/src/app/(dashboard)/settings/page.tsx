@@ -12,16 +12,18 @@ import {
   InputAdornment,
   Container,
 } from "@mui/material";
-import { 
-  Email, 
-  VpnKey, 
-  Person, 
-  Business, 
-  Notifications, 
+import {
+  Email,
+  VpnKey,
+  Person,
+  Business,
+  Notifications,
   Settings as SettingsIcon,
-  HelpOutline
+  HelpOutline,
+  RecordVoiceOver
 } from "@mui/icons-material";
 import EmailServiceEnableForm from "@/component/settings/Email/emailServiceEnableForm";
+import CallServiceEnableForm from "@/component/settings/CallShedule/callServiceEnableForm";
 
 
 export default function Settings() {
@@ -32,7 +34,7 @@ export default function Settings() {
     setTabIndex(newValue);
   };
 
- 
+
 
   return (
     <Container maxWidth="lg" sx={{ py: 6 }}>
@@ -48,24 +50,25 @@ export default function Settings() {
 
       {/* Navigation Tabs (Monotone Style) */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 4 }}>
-        <Tabs 
-          value={tabIndex} 
+        <Tabs
+          value={tabIndex}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
         >
           <Tab icon={<Business />} iconPosition="start" label="General" />
           <Tab icon={<Email />} iconPosition="start" label="Email Service" />
+          <Tab icon={<RecordVoiceOver />} iconPosition="start" label="Voice AI" />
           <Tab icon={<Notifications />} iconPosition="start" label="Alerts" />
           <Tab icon={<SettingsIcon />} iconPosition="start" label="API Access" />
         </Tabs>
       </Box>
 
       {/* Main Content Area (Glassmorphism Effect) */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: { xs: 3, md: 5 }, 
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, md: 5 },
           // Theme ke round aur border settings yahan auto-apply hongi
         }}
       >
@@ -73,7 +76,11 @@ export default function Settings() {
           <EmailServiceEnableForm />
         )}
 
-        {tabIndex !== 1 && (
+        {tabIndex === 2 && (
+          <CallServiceEnableForm />
+        )}
+
+        {tabIndex !== 1 && tabIndex !== 2 && (
           <Box sx={{ py: 8, textAlign: 'center' }}>
             <Typography color="text.secondary">
               Section coming soon in your monochrome dashboard.

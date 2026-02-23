@@ -19,7 +19,7 @@ import {
   DialogActions,
   DialogContent,
 } from "@mui/material";
-import { Visibility, Close, Add } from "@mui/icons-material";
+import { Visibility, Close, Add, Call } from "@mui/icons-material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useState, useEffect } from "react";
 import ViewDialog from "./viewDiloag";
@@ -27,6 +27,7 @@ import { LeadsData } from "@/app/(dashboard)/leads/page";
 import AddNewLead from "./addNewLead";
 import { Pagination } from "@mui/material";
 import ExcelImport from "@/component/exceImport";
+import { CallShedule } from "./callShedule";
 
 export default function LeadsTable({
   leads,
@@ -48,6 +49,7 @@ export default function LeadsTable({
   const [addNewLeadOpen, setAddNewLeadOpen] = useState(false);
   const [activeLead, setActiveLead] = useState<LeadsData | null>(null);
   const theme = useTheme();
+  const [callOpen, setCallOpen] = useState(false)
   console.log(leads);
 
   // Update activeLead when leads list changes (e.g. via subscription)
@@ -128,6 +130,7 @@ export default function LeadsTable({
                 Add Lead
               </Box>
 
+
               {/* Mobile par sirf icon dikhane ke liye aap upar wala Box use kar sakte hain 
       ya simple "+ Lead" likh sakte hain jo stack ho jayega */}
               <Box
@@ -158,6 +161,7 @@ export default function LeadsTable({
                       "Status",
                       "Budget",
                       "Service Type",
+                      "Shedule Call",
                       "View",
                     ].map((head) => (
                       <TableCell
@@ -196,6 +200,18 @@ export default function LeadsTable({
 
                       <TableCell>{lead.budget}</TableCell>
                       <TableCell>{lead.serviceType}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outlined"
+                          sx={{ height: { xs: "30px", sm: "35px" }, }}
+                          onClick={() => {
+                            setActiveLead(lead);
+                            setCallOpen(true);
+                          }}
+                        >
+                          <Call />
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         <IconButton
                           size="small"
@@ -260,6 +276,11 @@ export default function LeadsTable({
         setOpen={setAddNewLeadOpen}
         onLeadAdded={onLeadAdded}
       />
+      <CallShedule
+        open={callOpen}
+        setOpen={setCallOpen}
+        lead={activeLead}
+      />
 
       <Dialog
         open={importOpen}
@@ -267,7 +288,7 @@ export default function LeadsTable({
         fullWidth
         maxWidth="sm" // Size ko control karne ke liye
 
-        // sx={{display:'flex', justifyContent:'center', alignItems:'center',border:'2px solid red'}}
+      // sx={{display:'flex', justifyContent:'center', alignItems:'center',border:'2px solid red'}}
       >
         <DialogTitle
           sx={{

@@ -21,6 +21,17 @@ export class Organization {
   @Field({ nullable: true })
   logoUrl?: string;
 
+  @Prop({required:true})
+  @Field()
+  vapiApiKey:string
+
+  @Prop({required:true})
+  @Field()
+  vapiAssistantId:string
+
+  @Prop()
+  @Field({nullable:true})
+  vapiPhoneNumberId?:string
 
 
   @Prop({ default: null })

@@ -20,6 +20,9 @@ import { InquiryModule } from './inquiry/inquiry.module';
 
 // Guards
 import { PermissionGuard } from './common/decorator/permission/permission.gaurd';
+import { CallingResolver } from './calling/calling.resolver';
+import { CallingService } from './calling/calling.service';
+import { CallingModule } from './calling/calling.module';
 
 @Module({
   imports: [
@@ -27,6 +30,7 @@ import { PermissionGuard } from './common/decorator/permission/permission.gaurd'
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    ScheduleModule.forRoot(),
 
     // 2. Database Setup (Async connection)
     MongooseModule.forRootAsync({
@@ -69,6 +73,7 @@ import { PermissionGuard } from './common/decorator/permission/permission.gaurd'
     OrganizationModule,
     RolesModule,
     InquiryModule,
+    CallingModule,
   ],
   providers: [PermissionGuard],
 })

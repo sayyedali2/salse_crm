@@ -16,6 +16,9 @@ type Organization {
   name: String!
   domain: String!
   logoUrl: String
+  vapiApiKey: String!
+  vapiAssistantId: String!
+  vapiPhoneNumberId: String
   senderEmail: String
   senderName: String
   apiKey: String
@@ -127,6 +130,14 @@ type InquiryOutput {
   totalCount: Int!
 }
 
+type Calling {
+  _id: ID!
+  organizationId: String!
+  leadId: Lead!
+  sheduleTime: DateTime!
+  status: String!
+}
+
 type Query {
   leads(skip: Int!, take: Int!): PaginatedLeads!
   getLead(id: String!): Lead!
@@ -136,8 +147,10 @@ type Query {
   searchUsers(search: String!): [User!]!
   findAll(skip: Int!, take: Int!): OrganizationOutput!
   emailServiceStatus: Boolean!
+  getOrgSettings: Organization!
   getRoles: [Roles!]!
   getInquiries(skip: Int!, take: Int!): InquiryOutput!
+  getScheduledCalls(leadId: String): [Calling!]!
 }
 
 type Mutation {
@@ -160,11 +173,15 @@ type Mutation {
   resetPassword(input: ResetPasswordInput!): ResetPasswordResponse!
   deleteOrganization(id: String!): Boolean!
   emailEnable(data: emailEnableData!): Boolean!
+  vapiConfigure(data: VapiAgentConfigureInput!): Organization!
   createRole(input: CreateRoleInput!): Roles!
   deleteRole(roleID: String!): Roles!
   updateRole(input: UpdateRoleInput!): Roles!
   createBooking(createBookingInput: CreateBookingInput!): Booking!
   createInquiry(createInquiryInput: CreateInquiryInput!): Inquiry!
+  sheduleCall(data: CallingSheduleInput!): Calling!
+  deleteScheduledCall(id: String!): Calling!
+  updateScheduledCall(id: String!, sheduleTime: DateTime!): Calling!
 }
 
 input CreateLeadInput {
@@ -247,6 +264,12 @@ input emailEnableData {
   apiKey: String!
 }
 
+input VapiAgentConfigureInput {
+  vapiApikey: String!
+  vapiAssistantId: String!
+  vapiPhoneNumberId: String
+}
+
 input CreateRoleInput {
   name: String!
   permissions: [String!]!
@@ -270,6 +293,11 @@ input CreateInquiryInput {
   email: String!
   companyName: String
   message: String!
+}
+
+input CallingSheduleInput {
+  leadId: String!
+  sheduleTime: DateTime!
 }
 
 type Subscription {

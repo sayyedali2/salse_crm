@@ -121,4 +121,15 @@ export class OrganizationService implements OnModuleInit {
     if (!org) throw new NotFoundException('Organization not found!!!');
     return org.emailServiceStatus;
   }
+
+  async vapiConfigure(orgId: string,data:{vapiApikey:string,vapiAssistantId:string,vapiPhoneNumberId?:string}){
+    const org = await this.organizationModel.findById(new Types.ObjectId(orgId));
+    if (!org) throw new NotFoundException('Organization not found!!!');
+    if(!data.vapiApikey || !data.vapiAssistantId) throw new BadRequestException('Vapi Api Key and Assistant Id are required!!!');
+    org.vapiApiKey = data.vapiApikey;
+    org.vapiAssistantId = data.vapiAssistantId;
+    org.vapiPhoneNumberId = data.vapiPhoneNumberId;
+    await org.save();
+    return org;
+  }
 }
