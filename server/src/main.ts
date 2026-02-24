@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import * as mongoose from 'mongoose';
-import { truncateSync } from 'fs';
 
 async function bootstrap() {
   // mongoose.set('debug', true);
