@@ -278,8 +278,7 @@ export default function BookingPage() {
           <TextField
             type="date"
             fullWidth
-            sx={{ mb: 4, bgcolor: "white",color:"#1e293b" }}
-            InputLabelProps={{ shrink: true }}
+            InputLabelProps={{ shrink: true,sx:{color:"#1e293b"} }}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
 
