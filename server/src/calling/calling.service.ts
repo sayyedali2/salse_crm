@@ -93,6 +93,7 @@ export class CallingService {
                 }
             }
             const response = await axios.post(`https://api.vapi.ai/call`, payload, config)
+            console.log('Vapi Response:', JSON.stringify(response.data, null, 2));
             return response.data;
         } catch (error) {
             console.error("Vapi Error:", error.response?.data || error.message)
