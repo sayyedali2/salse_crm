@@ -18,6 +18,7 @@ import { AuthGuard } from 'src/auth/auth.guard';
 import { OrganizationOutput } from './dto/OrganizationOutput';
 import { globalPubSub } from 'src/pubsub-instance';
 import { Context } from '@nestjs/graphql';
+import { VapiAgentConfigureInput } from './dto/vapiAgentconfigure.input.dto';
 
 @InputType()
 class emailEnableData {
@@ -33,7 +34,7 @@ class emailEnableData {
 
 @Resolver()
 export class OrganizationResolver {
-  constructor(private organizationService: OrganizationService) {}
+  constructor(private organizationService: OrganizationService) { }
 
   @Query(() => OrganizationOutput)
   @UseGuards(AuthGuard, PermissionGuard)
@@ -86,5 +87,23 @@ export class OrganizationResolver {
     console.log(res);
     if (res) return true;
     return false;
+  }
+
+  @Mutation(() => Organization)
+  @UseGuards(AuthGuard)
+  async vapiConfigure(@Args('data') data: VapiAgentConfigureInput, @Context() context: any) {
+    const orgId = context.req.user.organizationId;
+    const res = await this.organizationService.vapiConfigure(orgId, data);
+    if (res) return res;
+    return null;
+  }
+
+  @Query(() => Organization)
+  @UseGuards(AuthGuard)
+  async getOrgSettings(@Context() context: any) {
+    const orgId = context.req.user.organizationId;
+    const org = await this.organizationService.findOne({ _id: orgId });
+    if (!org) throw new Error('Organization not found');
+    return org;
   }
 }

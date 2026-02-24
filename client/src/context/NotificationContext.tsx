@@ -2,7 +2,7 @@
 import { createContext, useContext, useState } from "react";
 import Notification from "../component/Notification";
 
-type NotifyType = "success" | "error" | "info" | "warning";
+export type NotifyType = "success" | "error" | "info" | "warning";
 
 interface NotificationContextType {
   notify: (msg: string, type?: NotifyType) => void;
