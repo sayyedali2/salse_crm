@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {  gql } from "@apollo/client";
+import { gql } from "@apollo/client";
 import { useMutation } from "@apollo/client/react";
 import { useParams, useRouter } from "next/navigation"; // URL se ID lene ke liye
 import {
@@ -134,7 +134,7 @@ export default function BookingPage() {
       }
     } catch (err: unknown) {
       let errorMessage = "Booking failed. Please try again.";
-      
+
       if (err instanceof Error) {
         // Handle Apollo GraphQL errors
         if (err.message.includes("403") || err.message.includes("Forbidden")) {
@@ -147,7 +147,7 @@ export default function BookingPage() {
           errorMessage = err.message;
         }
       }
-      
+
       setErrorMsg(errorMessage);
       console.error("Booking Error:", err);
     }
@@ -278,7 +278,22 @@ export default function BookingPage() {
           <TextField
             type="date"
             fullWidth
-            InputLabelProps={{ shrink: true,sx:{color:"#1e293b"} }}
+            InputLabelProps={{ shrink: true, sx: { color: "#1e293b" } }}
+            sx={{
+              mb: 4,
+              bgcolor: "white",
+              borderRadius: 1,
+              "& .MuiInputBase-input": {
+                color: "#1e293b",
+              },
+              "& .MuiOutlinedInput-root": {
+                "& fieldset": { borderColor: "#cbd5e1" },
+                "&:hover fieldset": { borderColor: "#6366f1" },
+              },
+              "& input::-webkit-calendar-picker-indicator": {
+                filter: "invert(0)",
+              },
+            }}
             onChange={(e) => setSelectedDate(e.target.value)}
           />
 
@@ -288,7 +303,7 @@ export default function BookingPage() {
           </Typography>
           <Grid container spacing={2} mb={4}>
             {TIME_SLOTS.map((slot) => (
-              <Grid  component="div" key={slot}>
+              <Grid component="div" key={slot}>
                 <Chip
                   label={slot}
                   onClick={() => setSelectedSlot(slot)}
