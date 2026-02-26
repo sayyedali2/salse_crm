@@ -16,8 +16,8 @@ type Organization {
   name: String!
   domain: String!
   logoUrl: String
-  vapiApiKey: String!
-  vapiAssistantId: String!
+  vapiApiKey: String
+  vapiAssistantId: String
   vapiPhoneNumberId: String
   senderEmail: String
   senderName: String
