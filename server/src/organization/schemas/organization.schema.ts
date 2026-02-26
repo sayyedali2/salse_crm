@@ -21,17 +21,17 @@ export class Organization {
   @Field({ nullable: true })
   logoUrl?: string;
 
-  @Prop({required:true})
-  @Field()
-  vapiApiKey?:string
-
-  @Prop({required:true})
-  @Field()
-  vapiAssistantId?:string
+  @Prop()
+  @Field({ nullable: true })
+  vapiApiKey?: string
 
   @Prop()
-  @Field({nullable:true})
-  vapiPhoneNumberId?:string
+  @Field({ nullable: true })
+  vapiAssistantId?: string
+
+  @Prop()
+  @Field({ nullable: true })
+  vapiPhoneNumberId?: string
 
 
   @Prop({ default: null })
@@ -42,16 +42,16 @@ export class Organization {
   @Field({ nullable: true })
   senderName?: string;
 
-  @Prop({default:null})
-  @Field({nullable:true})
-  apiKey?:string
+  @Prop({ default: null })
+  @Field({ nullable: true })
+  apiKey?: string
 
   @Prop()
-  @Field({nullable:true})
-  iv?:string
+  @Field({ nullable: true })
+  iv?: string
 
-  @Prop({type:Boolean,default:false})
-  @Field(()=>Boolean)
+  @Prop({ type: Boolean, default: false })
+  @Field(() => Boolean)
   emailServiceStatus?: boolean;
 
   @Prop({ required: true, unique: true })
