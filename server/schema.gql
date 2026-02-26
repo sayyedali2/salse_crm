@@ -147,6 +147,7 @@ type Query {
   searchUsers(search: String!): [User!]!
   findAll(skip: Int!, take: Int!): OrganizationOutput!
   emailServiceStatus: Boolean!
+  vapiServiceStatus: Boolean!
   getOrgSettings: Organization!
   getRoles: [Roles!]!
   getInquiries(skip: Int!, take: Int!): InquiryOutput!
@@ -227,6 +228,7 @@ input UpdateUserInput {
   avatar: String
   role: ID
   organizationId: ID
+  activeLeadsCount: Int
 }
 
 input CreateOrganizationInput {

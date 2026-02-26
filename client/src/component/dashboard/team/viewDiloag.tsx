@@ -34,6 +34,7 @@ import { gql } from "@apollo/client";
 import { useNotification } from "@/context/NotificationContext";
 import { useForm, Controller } from "react-hook-form";
 import { TeamData } from "@/app/(dashboard)/team/page";
+import PhoneInput from "@/component/phoneInput/PhoneInput";
 
 const DELETE_TEAM_MEMBER = gql`
   mutation DeleteTeamMember($userId: String!) {
@@ -120,13 +121,13 @@ export default function ViewDialog(team: TeamMemberDialog) {
   } = useForm<TeamFormValues>({
     defaultValues: team.user
       ? {
-          name: team.user.name,
-          email: team.user.email,
-          phone: team.user.phone,
-          status: team.user.status,
-          activeLeadsCount: team.user.activeLeadsCount,
-          role: team.user.role?._id || "",
-        }
+        name: team.user.name,
+        email: team.user.email,
+        phone: team.user.phone,
+        status: team.user.status,
+        activeLeadsCount: team.user.activeLeadsCount,
+        role: team.user.role?._id || "",
+      }
       : {},
   });
 
@@ -204,9 +205,8 @@ export default function ViewDialog(team: TeamMemberDialog) {
             p: { xs: 1.5, sm: 2 }, // Mobile padding adjusted
             borderRadius: 3,
             bgcolor: isEditing ? alpha(electricBlue, 0.02) : "transparent",
-            border: `1px solid ${
-              isEditing ? alpha(electricBlue, 0.2) : theme.palette.divider
-            }`,
+            border: `1px solid ${isEditing ? alpha(electricBlue, 0.2) : theme.palette.divider
+              }`,
             transition: "0.3s",
           }}
         >
@@ -261,6 +261,14 @@ export default function ViewDialog(team: TeamMemberDialog) {
                           ))
                         )}
                       </TextField>
+                    ) : fieldName === "phone" ? (
+                      <PhoneInput
+                        value={field.value as string}
+                        onChange={field.onChange}
+                        variant="standard"
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                      />
                     ) : (
                       <TextField
                         {...field}

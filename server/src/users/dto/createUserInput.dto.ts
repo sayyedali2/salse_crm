@@ -1,5 +1,5 @@
-import { InputType, Field, ID } from '@nestjs/graphql';
-import { IsEmail, IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { InputType, Field, ID, Int } from '@nestjs/graphql';
+import { IsEmail, IsString, IsNotEmpty, IsOptional,IsNumber } from 'class-validator';
 import { Types } from 'mongoose';
 
 @InputType()
@@ -17,6 +17,8 @@ export class CreateUserInput {
   @Field(() => String)
   @IsString()
   password: string;
+
+ 
 
   @Field(() => String)
   @IsString()

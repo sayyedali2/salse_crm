@@ -19,10 +19,11 @@ import {
   Close as CloseIcon,
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { gql } from "@apollo/client";
 import { useNotification } from "@/context/NotificationContext";
+import PhoneInput from "@/component/phoneInput/PhoneInput";
 
 // ... (Queries and Interfaces remain the same)
 const ADD_TEAM_MEMBER = gql`
@@ -75,7 +76,7 @@ export default function AddNewTeamMember({
 }) {
   const theme = useTheme();
   const { notify } = useNotification();
-  
+
   // Mobile par full screen karne ke liye logic
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -86,6 +87,7 @@ export default function AddNewTeamMember({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CreateAdminUserInput>({
     defaultValues: {
@@ -199,26 +201,30 @@ export default function AddNewTeamMember({
               ))}
             </TextField>
 
-            <TextField
-              fullWidth
-              label="Phone"
-              placeholder="+1 234..."
-              {...register("phone")}
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <PhoneInput
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
           </Stack>
         </Stack>
       </DialogContent>
 
-      <DialogActions 
-        sx={{ 
-          p: { xs: 2, sm: 3 }, 
+      <DialogActions
+        sx={{
+          p: { xs: 2, sm: 3 },
           pt: 0,
           flexDirection: { xs: "column", sm: "row" }, // Mobile par button niche-upar
-          gap: 1 
+          gap: 1
         }}
       >
-        <Button 
-          variant="outlined" 
+        <Button
+          variant="outlined"
           onClick={handleClose}
           fullWidth={fullScreen}
           sx={{ display: { xs: "flex", sm: "none" } }} // Mobile par cancel button dikhayen

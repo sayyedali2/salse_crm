@@ -35,6 +35,7 @@ import { useNotification } from "@/context/NotificationContext";
 import { useForm, Controller } from "react-hook-form";
 import AgentSearchAutocomplete from "@/component/autocomplete/teamMember.autocomplete";
 import { SERVICE_TYPES } from "@/constants/common";
+import PhoneInput from "@/component/phoneInput/PhoneInput";
 
 const LEAD_STATUSES = [
   "NEW",
@@ -256,6 +257,21 @@ export default function ViewDialog(lead: LeadDialog) {
                         }
                       }
                     }}
+                  />
+                ) : fieldName === "phone" ? (
+                  // Phone field with country code dropdown
+                  <Controller
+                    name={fieldName}
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        value={field.value as string}
+                        onChange={field.onChange}
+                        variant="standard"
+                        size="small"
+                        sx={{ mt: 0.5 }}
+                      />
+                    )}
                   />
                 ) : (
                   // Normal fields ke liye purana Controller logic

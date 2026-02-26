@@ -27,6 +27,7 @@
     "react": "^19.0.0-rc-66855b96-20241106",
     "react-dom": "^19.0.0-rc-66855b96-20241106",
     "react-hook-form": "^7.69.0",
+    "react-phone-input-2": "^2.15.1",
     "recharts": "^3.6.0",
     "rxjs": "^7.8.2"
   },

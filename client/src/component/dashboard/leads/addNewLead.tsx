@@ -20,11 +20,12 @@ import {
   Close as CloseIcon,
   PersonAdd as PersonAddIcon,
 } from "@mui/icons-material";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { gql } from "@apollo/client";
 import { useNotification } from "@/context/NotificationContext";
 import AgentSearchAutocomplete from "@/component/autocomplete/teamMember.autocomplete";
+import PhoneInput from "@/component/phoneInput/PhoneInput";
 import { useState } from "react";
 
 const ADD_LEAD = gql`
@@ -83,6 +84,7 @@ export default function AddNewLead({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<LeadsData>({
     defaultValues: {
@@ -96,7 +98,7 @@ export default function AddNewLead({
 
   const handleClose = () => {
     reset();
-    setAssignedUserId(null); // Reset assignment
+    setAssignedUserId(null);
     setOpen(false);
   };
 
@@ -106,7 +108,7 @@ export default function AddNewLead({
       await createLead({
         variables: {
           createLeadInput: { ...data, budget: budgetNumber },
-          manualUserId: assignedUserId, // Pass selected user ID
+          manualUserId: assignedUserId,
         },
       });
       notify("Lead created successfully!");
@@ -180,13 +182,17 @@ export default function AddNewLead({
           />
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Phone"
-              placeholder="+1 234..."
-              {...register("phone")}
-              error={!!errors.phone}
-              helperText={errors.phone?.message}
+            <Controller
+              name="phone"
+              control={control}
+              render={({ field }) => (
+                <PhoneInput
+                  value={field.value}
+                  onChange={field.onChange}
+                  error={!!errors.phone}
+                  helperText={errors.phone?.message}
+                />
+              )}
             />
             <TextField
               fullWidth
