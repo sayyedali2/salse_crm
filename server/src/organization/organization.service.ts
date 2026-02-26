@@ -22,7 +22,7 @@ export class OrganizationService implements OnModuleInit {
     private organizationModel: Model<OrganizationType>,
     @Inject(forwardRef(() => MailService))
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     try {
@@ -122,10 +122,16 @@ export class OrganizationService implements OnModuleInit {
     return org.emailServiceStatus;
   }
 
-  async vapiConfigure(orgId: string,data:{vapiApikey:string,vapiAssistantId:string,vapiPhoneNumberId?:string}){
+  async vapiServiceStatus(orgId: string) {
     const org = await this.organizationModel.findById(new Types.ObjectId(orgId));
     if (!org) throw new NotFoundException('Organization not found!!!');
-    if(!data.vapiApikey || !data.vapiAssistantId) throw new BadRequestException('Vapi Api Key and Assistant Id are required!!!');
+    return !!(org.vapiApiKey && org.vapiAssistantId);
+  }
+
+  async vapiConfigure(orgId: string, data: { vapiApikey: string, vapiAssistantId: string, vapiPhoneNumberId?: string }) {
+    const org = await this.organizationModel.findById(new Types.ObjectId(orgId));
+    if (!org) throw new NotFoundException('Organization not found!!!');
+    if (!data.vapiApikey || !data.vapiAssistantId) throw new BadRequestException('Vapi Api Key and Assistant Id are required!!!');
     org.vapiApiKey = data.vapiApikey;
     org.vapiAssistantId = data.vapiAssistantId;
     org.vapiPhoneNumberId = data.vapiPhoneNumberId;

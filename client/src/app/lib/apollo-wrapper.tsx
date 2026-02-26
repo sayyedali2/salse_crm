@@ -12,9 +12,11 @@ import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
 import { getMainDefinition } from "@apollo/client/utilities";
 
 const GRAPHQL_ENDPOINT =
-  process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "https://salse-crm.onrender.com/graphql";
+process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "https://salse-crm.onrender.com/graphql";
+// process.env.NEXT_PUBLIC_GRAPHQL_ENDPOINT || "http://localhost:3001/graphql";
 const WEBSOCKET_ENDPOINT =
-  process.env.NEXT_PUBLIC_WEBSOCKET_ENDPOINT || "wss://salse-crm.onrender.com/graphql";
+process.env.NEXT_PUBLIC_WEBSOCKET_ENDPOINT || "wss://salse-crm.onrender.com/graphql";
+// process.env.NEXT_PUBLIC_WEBSOCKET_ENDPOINT || "ws://localhost:3001/graphql";
 
 function makeClient() {
   const httpLink = new HttpLink({

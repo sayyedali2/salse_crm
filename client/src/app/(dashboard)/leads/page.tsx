@@ -10,6 +10,7 @@ import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import { useRouter } from "next/navigation";
 import { LEAD_UPDATED_SUBSCRIPTION } from "@/app/graphQL/Lead.graphQl";
 import EmailServiceAlert from "@/component/emailServiceAlert";
+import VapiServiceAlert from "@/component/vapiServiceAlert";
 
 const GET_LEADS = gql`
   query GetLeads($skip: Int!, $take: Int!) {
@@ -31,6 +32,7 @@ const GET_LEADS = gql`
       }
     }
     emailServiceStatus
+    vapiServiceStatus
   }
 `;
 
@@ -99,6 +101,7 @@ interface GetLeadsResponse {
     totalCount: number;
   };
   emailServiceStatus: boolean;
+  vapiServiceStatus: boolean;
 }
 
 interface LeadAddedSubscription {
@@ -282,6 +285,7 @@ export default function LeadsPage() {
   const totalCount = data?.leads.totalCount || 0;
 
   const isEmailEnabled = data?.emailServiceStatus;
+  const isVapiEnabled = data?.vapiServiceStatus;
 
   return (
     <>
@@ -293,6 +297,9 @@ export default function LeadsPage() {
       </Typography>
       {isEmailEnabled === false && (
         <EmailServiceAlert isEnabled={isEmailEnabled} />
+      )}
+      {isVapiEnabled === false && (
+        <VapiServiceAlert isEnabled={isVapiEnabled} />
       )}
       <TitleBox
         titleOne="Total Leads"

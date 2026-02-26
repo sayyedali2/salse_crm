@@ -89,6 +89,14 @@ export class OrganizationResolver {
     return false;
   }
 
+  @Query(() => Boolean)
+  @UseGuards(AuthGuard)
+  async vapiServiceStatus(@Context() context: any) {
+    const orgId = context.req.user.organizationId;
+    const res = await this.organizationService.vapiServiceStatus(orgId);
+    return res;
+  }
+
   @Mutation(() => Organization)
   @UseGuards(AuthGuard)
   async vapiConfigure(@Args('data') data: VapiAgentConfigureInput, @Context() context: any) {
