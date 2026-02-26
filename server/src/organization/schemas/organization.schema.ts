@@ -23,11 +23,11 @@ export class Organization {
 
   @Prop({required:true})
   @Field()
-  vapiApiKey:string
+  vapiApiKey?:string
 
   @Prop({required:true})
   @Field()
-  vapiAssistantId:string
+  vapiAssistantId?:string
 
   @Prop()
   @Field({nullable:true})
